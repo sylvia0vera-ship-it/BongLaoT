@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <!-- 字体（按需，系统字体时省略；只能用 Google 字体，CSS 地址前缀：https://lf-code-agent.coze.cn/obj/x-ai-cn/fonts/google） -->
+  <!-- <link href="https://lf-code-agent.coze.cn/obj/x-ai-cn/fonts/google/google-all-fonts.css" rel="stylesheet"/> -->
+
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/jquery/jquery-3.7.1.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/lucide/lucide-1.11.0.min.js"></script>
+  <script src="https://lf-code-agent.coze.cn/obj/x-ai-cn/cdn/tailwindcss/tailwindcss-browser-4.2.4.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      /* === 品牌色 === */
+      --color-primary:              #D98C9A;
+      --color-primary-container:    #FDE2E4;
+      --color-on-primary:           #ffffff;
+      /* === 背景 / 表面（温暖手作色调系统） === */
+      --color-background:                 #F8EDEB;
+      --color-surface-container-lowest:   #FFFFFF;
+      --color-surface:                    #FFF7F2;
+      --color-surface-container:          #FDE2E4;
+      --color-surface-container-high:     #FFF1DE;
+      --color-surface-container-highest:  #E8C9C4;
+      /* === 文字 === */
+      --color-on-surface:           #2F2523;
+      --color-on-surface-variant:   #7A8061;
+      /* === 功能色 === */
+      --color-success:  #7A8061;
+      --color-error:    #C77763;
+      --color-warning:  #D98C9A;
+      /* === 扩展背景色 === */
+      --color-warm-pink:    #FDE2E4;
+      --color-warm-cream:   #FFF1DE;
+      --color-warm-white:   #FFF7F2;
+      /* === 边框 === */
+      --color-outline:          #3A2A28;
+      --color-outline-variant:  #E8C9C4;
+      /* === 圆角 === */
+      --radius-sm:   0.5rem;
+      --radius-md:   0.75rem;
+      --radius-lg:   1rem;
+      --radius-xl:   1.25rem;
+      --radius-2xl:  1.5rem;
+      --radius-full: 9999px;
+      /* === 阴影 === */
+      --shadow-card:   0 4px 12px rgba(0,0,0,0.06);
+      --shadow-float:  0 10px 25px rgba(0,0,0,0.08);
+      --shadow-dialog: 0 25px 50px rgba(0,0,0,0.12);
+      /* === 字体 === */
+      --font-sans: system-ui, sans-serif;
+    }
+  </style>
+
+  <style>
+    body {
+      min-height: max(812px, 100dvh);
+      font-family: system-ui, sans-serif;
+    }
+  </style>
+
+  <!-- 图片兜底 -->
+  <script>
+    document.addEventListener('error', function (e) {
+      const img = e.target;
+      if (img.tagName !== 'IMG' || img.dataset.fallback) return;
+      img.dataset.fallback = '1';
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const cat = img.getAttribute('data-category') || '其他';
+      const alt = img.getAttribute('alt') || '';
+      const label = esc(alt.length > 8 ? alt.slice(0, 8) + '…' : alt);
+      const icons = { '人物': '👤', '自然风景': '🏞', '动物': '🐾', '建筑城市': '🏙', '运动体育': '⚽', '交通工具': '🚗', '食物': '🍽', '服饰时尚': '👗', '商业科技': '💼', '游戏娱乐': '🎮', '艺术': '🎨', '其他': '🖼' };
+      const icon = icons[cat] || '🖼';
+      const w = img.width || 400, h = img.height || 300;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="45%" text-anchor="middle" font-size="${Math.min(w, h) * 0.18}" dominant-baseline="central">${icon}</text><text x="50%" y="68%" text-anchor="middle" font-size="${Math.min(w, h) * 0.07}" fill="%239ca3af" font-family="system-ui,sans-serif" dominant-baseline="central">${label}</text></svg>`;
+      img.src = 'data:image/svg+xml,' + svg;
+    }, true);
+  </script>
+</head>
+
+<body class="bg-background text-on-surface font-sans">
+
+  <!-- 导航组件 -->
+  <header class="bg-background sticky top-0 z-40 h-14 flex items-center justify-between px-4">
+    <div class="flex items-center gap-2">
+      <i data-lucide="message-circle-heart" class="w-5 h-5 text-primary"></i>
+      <h1 class="text-base font-semibold text-on-surface">回复小助手</h1>
+    </div>
+    <button id="btn-info" class="w-10 h-10 flex items-center justify-center text-on-surface-variant rounded-full hover:bg-surface-container active:bg-surface-container-high transition-colors" aria-label="关于">
+      <i data-lucide="info" class="w-5 h-5"></i>
+    </button>
+  </header>
+
+  <main class="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+    <!-- @main-content:start -->
+
+    <!-- ===== 消息输入区 ===== -->
+    <section class="px-4 pt-4 pb-6">
+      <!-- 浅粉便签风格卡片 -->
+      <div class="bg-surface rounded-2xl shadow-card p-4">
+        <!-- 主输入框 -->
+        <textarea id="input-message" class="w-full bg-surface-container border-none rounded-xl px-4 py-3 text-base text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors resize-none" rows="4" placeholder="粘贴粉丝发来的微信消息..."></textarea>
+
+        <!-- 补充背景输入框 -->
+        <div class="mt-3">
+          <textarea id="input-context" class="w-full bg-surface-container border-none rounded-xl px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors resize-none" rows="2" placeholder="补充粉丝背景（可选），如「大R粉丝，月消费5k+」"></textarea>
+        </div>
+
+        <!-- 分析按钮 -->
+        <button id="btn-analyze" class="w-full bg-primary text-on-primary py-3.5 rounded-xl text-base font-semibold hover:opacity-90 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2 mt-4">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+          分析消息
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== AI分析结果区（点击分析后显示） ===== -->
+    <section id="section-result" class="px-4 pb-6 hidden">
+
+      <!-- 原始消息回显 -->
+      <div class="bg-surface rounded-2xl shadow-card p-4 mb-4">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="message-square" class="w-4 h-4 text-on-surface-variant"></i>
+          <span class="text-xs font-semibold text-on-surface-variant">粉丝消息</span>
+        </div>
+        <p id="display-message" class="text-sm text-on-surface leading-relaxed">你怎么这么久才回我消息？我等了好久</p>
+        <p id="display-context" class="text-xs text-on-surface-variant mt-2 hidden">背景：<span id="display-context-text"></span></p>
+      </div>
+
+      <!-- 消息类型判断 -->
+      <div class="bg-surface rounded-2xl shadow-card p-4 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+          <i data-lucide="stamp" class="w-4 h-4 text-primary"></i>
+          <span class="text-sm font-semibold text-on-surface">消息类型</span>
+        </div>
+        <!-- 印章标签 -->
+        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold bg-primary-container text-on-surface">
+          抱怨回复慢
+        </span>
+      </div>
+
+      <!-- 情绪判断 -->
+      <div class="bg-surface rounded-2xl shadow-card p-4 mb-4">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="heart-pulse" class="w-4 h-4 text-primary"></i>
+          <span class="text-sm font-semibold text-on-surface">情绪判断</span>
+        </div>
+        <p class="text-sm text-on-surface leading-relaxed">对方有些焦虑和被忽视的感觉，希望被重视</p>
+      </div>
+
+      <!-- 注意事项 -->
+      <div class="bg-surface rounded-2xl shadow-card p-4 mb-4">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="shield-alert" class="w-4 h-4 text-error"></i>
+          <span class="text-sm font-semibold text-on-surface">注意事项</span>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-start gap-2">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-error mt-2 shrink-0"></span>
+            <p class="text-sm text-error leading-relaxed"><strong>容易越界</strong> → 回复太亲密可能强化情感依赖</p>
+          </div>
+          <div class="flex items-start gap-2">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-error mt-2 shrink-0"></span>
+            <p class="text-sm text-error leading-relaxed"><strong>容易敷衍</strong> → 简单回复可能让对方觉得不在意</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 三种回复建议区（点击分析后显示） ===== -->
+    <section id="section-replies" class="px-4 pb-6 hidden">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="pen-tool" class="w-4 h-4 text-primary"></i>
+        <span class="text-sm font-semibold text-on-surface">回复建议</span>
+      </div>
+
+      <!-- 温柔安抚版 -->
+      <div class="bg-warm-pink rounded-2xl shadow-card p-4 mb-3">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="heart" class="w-4 h-4 text-primary"></i>
+          <span class="text-xs font-bold text-primary tracking-wide">温柔安抚版</span>
+        </div>
+        <p id="reply-gentle" class="text-sm text-on-surface leading-relaxed">"看到消息了～刚忙完一阵，不是故意忽略你的"</p>
+        <button id="btn-copy-gentle" class="mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/60 text-on-surface-variant hover:bg-white/80 active:scale-[0.97] transition-all">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          复制
+        </button>
+      </div>
+
+      <!-- 轻松互动版 -->
+      <div class="bg-warm-cream rounded-2xl shadow-card p-4 mb-3">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="smile" class="w-4 h-4 text-warning"></i>
+          <span class="text-xs font-bold text-warning tracking-wide">轻松互动版</span>
+        </div>
+        <p id="reply-casual" class="text-sm text-on-surface leading-relaxed">"嗨～刚看到消息，今天忙飞了哈哈"</p>
+        <button id="btn-copy-casual" class="mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/60 text-on-surface-variant hover:bg-white/80 active:scale-[0.97] transition-all">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          复制
+        </button>
+      </div>
+
+      <!-- 边界清晰版 -->
+      <div class="bg-surface-container-lowest rounded-2xl shadow-card p-4 mb-3">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="shield-check" class="w-4 h-4 text-on-surface-variant"></i>
+          <span class="text-xs font-bold text-on-surface-variant tracking-wide">边界清晰版</span>
+        </div>
+        <p id="reply-boundary" class="text-sm text-on-surface leading-relaxed">"谢谢关心～我这边刚忙完，有什么想聊的？"</p>
+        <button id="btn-copy-boundary" class="mt-3 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface-container text-on-surface-variant hover:bg-surface-container-high active:scale-[0.97] transition-all">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          复制
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== 避雷提醒区（点击分析后显示） ===== -->
+    <section id="section-warning" class="px-4 pb-6 hidden">
+      <div class="bg-warm-white rounded-2xl shadow-card p-4 border border-error/20">
+        <div class="flex items-center gap-2 mb-3">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-error"></i>
+          <span class="text-sm font-semibold text-error">避雷提醒</span>
+        </div>
+        <!-- 不建议的回复 -->
+        <div class="bg-surface-container/60 rounded-xl p-3 mb-3">
+          <p class="text-xs text-on-surface-variant mb-1">不建议这样回复：</p>
+          <p id="reply-bad" class="text-sm text-on-surface leading-relaxed line-through decoration-error/40">"你是我最在意的粉丝，以后一定秒回你"</p>
+        </div>
+        <!-- 为什么不建议 -->
+        <div class="flex items-start gap-2">
+          <i data-lucide="x-circle" class="w-4 h-4 text-error mt-0.5 shrink-0"></i>
+          <p class="text-sm text-error leading-relaxed">暗示特殊关系 + 承诺秒回 = 制造情感依赖 + 给自己挖坑</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 底部原则提示 ===== -->
+    <section id="section-principles" class="px-4 pb-8">
+      <div class="bg-warm-white rounded-2xl shadow-card p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <i data-lucide="compass" class="w-4 h-4 text-primary"></i>
+          <span class="text-sm font-semibold text-on-surface">核心原则</span>
+        </div>
+        <div class="space-y-2.5">
+          <!-- 原则1 -->
+          <div class="flex items-center gap-2.5">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-container text-xs font-bold text-primary shrink-0">1</span>
+            <p class="text-sm text-on-surface">不冷漠不敷衍</p>
+          </div>
+          <!-- 原则2 -->
+          <div class="flex items-center gap-2.5">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-container text-xs font-bold text-primary shrink-0">2</span>
+            <p class="text-sm text-on-surface">不油腻不越界</p>
+          </div>
+          <!-- 原则3 -->
+          <div class="flex items-center gap-2.5">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-container text-xs font-bold text-primary shrink-0">3</span>
+            <p class="text-sm text-on-surface">不承诺线下见面</p>
+          </div>
+          <!-- 原则4 -->
+          <div class="flex items-center gap-2.5">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-container text-xs font-bold text-primary shrink-0">4</span>
+            <p class="text-sm text-on-surface">不给无法兑现的承诺</p>
+          </div>
+          <!-- 原则5 -->
+          <div class="flex items-center gap-2.5">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-container text-xs font-bold text-primary shrink-0">5</span>
+            <p class="text-sm text-on-surface">保持温暖但清晰的边界感</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- @main-content:end -->
+  </main>
+
+  <!-- 复制成功提示 Toast -->
+  <div id="toast-copy" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-on-surface text-white text-sm font-medium px-4 py-2 rounded-xl shadow-float transition-all duration-300 opacity-0 pointer-events-none">
+    已复制到剪贴板
+  </div>
+
+  <script>lucide.createIcons();</script>
+
+  <script>
+    $(function() {
+      // ===== 导航辅助函数 =====
+      function navPush(route) {
+        console.log('[原型演示] PUSH 到: ' + route);
+        window.location.href = route;
+      }
+      function navReplace(route) {
+        console.log('[原型演示] REPLACE 为: ' + route);
+        window.location.replace(route);
+      }
+      function navReset(route) {
+        console.log('[原型演示] RESET 到: ' + route);
+        window.location.href = route;
+      }
+      function navBack() {
+        console.log('[原型演示] BACK 返回上一页');
+        if (window.history.length > 1) window.history.back();
+      }
+
+      // ===== 分析按钮点击 =====
+      $('#btn-analyze').on('click', function() {
+        var msg = $('#input-message').val().trim();
+
+        // 如果输入框为空，填入示例消息
+        if (!msg) {
+          $('#input-message').val('你怎么这么久才回我消息？我等了好久');
+          msg = '你怎么这么久才回我消息？我等了好久';
+        }
+
+        // 回显消息
+        $('#display-message').text(msg);
+
+        // 回显补充背景（如有）
+        var ctx = $('#input-context').val().trim();
+        if (ctx) {
+          $('#display-context').removeClass('hidden');
+          $('#display-context-text').text(ctx);
+        } else {
+          $('#display-context').addClass('hidden');
+        }
+
+        // 显示分析结果区
+        $('#section-result').removeClass('hidden');
+        $('#section-replies').removeClass('hidden');
+        $('#section-warning').removeClass('hidden');
+
+        // 重新创建图标（新显示区域内的图标需要初始化）
+        lucide.createIcons();
+
+        // 滚动到结果区
+        $('html, body').animate({
+          scrollTop: $('#section-result').offset().top - 60
+        }, 400);
+      });
+
+      // ===== 复制功能 =====
+      function showCopyToast() {
+        var $toast = $('#toast-copy');
+        $toast.css({ opacity: 1, pointerEvents: 'auto' });
+        setTimeout(function() {
+          $toast.css({ opacity: 0, pointerEvents: 'none' });
+        }, 1500);
+      }
+
+      // 复制温柔安抚版
+      $('#btn-copy-gentle').on('click', function() {
+        var text = $('#reply-gentle').text();
+        // 去掉引号
+        text = text.replace(/^[""]|[""]$/g, '');
+        navigator.clipboard.writeText(text).then(showCopyToast).catch(function() {
+          console.log('[原型演示] 复制内容: ' + text);
+          showCopyToast();
+        });
+      });
+
+      // 复制轻松互动版
+      $('#btn-copy-casual').on('click', function() {
+        var text = $('#reply-casual').text();
+        text = text.replace(/^[""]|[""]$/g, '');
+        navigator.clipboard.writeText(text).then(showCopyToast).catch(function() {
+          console.log('[原型演示] 复制内容: ' + text);
+          showCopyToast();
+        });
+      });
+
+      // 复制边界清晰版
+      $('#btn-copy-boundary').on('click', function() {
+        var text = $('#reply-boundary').text();
+        text = text.replace(/^[""]|[""]$/g, '');
+        navigator.clipboard.writeText(text).then(showCopyToast).catch(function() {
+          console.log('[原型演示] 复制内容: ' + text);
+          showCopyToast();
+        });
+      });
+
+      // ===== 关于按钮 =====
+      $('#btn-info').on('click', function() {
+        console.log('[原型演示] 关于：回复小助手 - 直播私域关系维护 AI 助手');
+      });
+    });
+  </script>
+</body>
+
+</html>
