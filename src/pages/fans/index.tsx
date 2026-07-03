@@ -16,6 +16,11 @@ import {
   Loader,
 } from 'lucide-react-taro'
 
+/** 安全区顶部高度 */
+const STATUS_BAR_HEIGHT = (() => {
+  try { return Taro.getSystemInfoSync().statusBarHeight || 0 } catch { return 0 }
+})()
+
 /** 粉丝档案类型 */
 interface FanProfile {
   id: string
@@ -153,7 +158,7 @@ const IndexPage = () => {
       <View className="flex flex-col min-h-screen bg-background">
         <View
           className="bg-background sticky top-0 z-40 px-4 pb-2"
-          style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
+          style={{ paddingTop: `${STATUS_BAR_HEIGHT + 8}px` }}
         >
           <View className="flex flex-row items-center justify-between">
             <View onClick={() => setShowEditor(false)} className="flex flex-row items-center gap-1">
@@ -262,7 +267,7 @@ const IndexPage = () => {
     <View className="flex flex-col min-h-screen bg-background">
       <View
         className="bg-background sticky top-0 z-40 px-4 pb-2"
-        style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
+        style={{ paddingTop: `${STATUS_BAR_HEIGHT + 8}px` }}
       >
         <View className="flex flex-row items-center justify-between">
           <View className="flex flex-row items-center gap-2">

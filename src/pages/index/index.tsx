@@ -75,6 +75,11 @@ const PRINCIPLES = [
   '保持温暖但清晰的边界感',
 ]
 
+/** 安全区顶部高度 */
+const STATUS_BAR_HEIGHT = (() => {
+  try { return Taro.getSystemInfoSync().statusBarHeight || 0 } catch { return 0 }
+})()
+
 const IndexPage = () => {
   const [message, setMessage] = useState('')
   const [context, setContext] = useState('')
@@ -187,7 +192,7 @@ const IndexPage = () => {
       {/* Header */}
       <View
         className="bg-background sticky top-0 z-40 px-4 pb-2"
-        style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
+        style={{ paddingTop: `${STATUS_BAR_HEIGHT + 8}px` }}
       >
         <View className="flex flex-row items-center justify-between">
           <View className="flex flex-row items-center gap-2">
