@@ -11,23 +11,23 @@ page {
 :root,
 page,
 root-portal {
-  --background: lab(100% 0 0);
-  --foreground: lab(2.75381% 0 0);
-  --card: lab(100% 0 0);
+  --background: #F8EDEB;
+  --foreground: #2F2523;
+  --card: #FFF7F2;
   --card-foreground: lab(2.75381% 0 0);
   --popover: lab(100% 0 0);
   --popover-foreground: lab(2.75381% 0 0);
-  --primary: lab(7.78201% -0.0000149012 0);
-  --primary-foreground: lab(98.26% 0 0);
+  --primary: #D98C9A;
+  --primary-foreground: #ffffff;
   --secondary: lab(96.52% -0.0000298023 0.0000119209);
   --secondary-foreground: lab(7.78201% -0.0000149012 0);
-  --muted: lab(96.52% -0.0000298023 0.0000119209);
-  --muted-foreground: lab(48.496% 0 0);
+  --muted: #FDE2E4;
+  --muted-foreground: #7A8061;
   --accent: lab(96.52% -0.0000298023 0.0000119209);
   --accent-foreground: lab(7.78201% -0.0000149012 0);
-  --destructive: lab(48.4493% 77.4328 61.5452);
+  --destructive: #C77763;
   --destructive-foreground: lab(96.4152% 3.22586 1.14673);
-  --border: lab(90.952% 0 -0.0000119209);
+  --border: #3A2A28;
   --input: lab(90.952% 0 -0.0000119209);
   --ring: lab(66.128% -0.0000298023 0.0000119209);
   --sidebar: lab(98.26% 0 0);
@@ -44,6 +44,16 @@ root-portal {
   --code-number: lab(48.96% 0 0);
   --selection: lab(2.75381% 0 0);
   --selection-foreground: lab(100% 0 0);
+  --primary-container: #FDE2E4;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-high: #FFF1DE;
+  --surface-container-highest: #E8C9C4;
+  --success: #7A8061;
+  --warning: #D98C9A;
+  --warm-pink: #FDE2E4;
+  --warm-cream: #FFF1DE;
+  --warm-white: #FFF7F2;
+  --outline-variant: #E8C9C4;
   --tw-shadow: 0 0 #0000;
   --tw-shadow-color: initial;
   --tw-shadow-alpha: 100%;
@@ -136,6 +146,33 @@ root-portal {
   --color-selection-foreground: var(--selection-foreground);
   --color-code: var(--code);
   --radius-full: 9999px;
+  --color-primary-container: var(--primary-container);
+  --color-on-primary: var(--primary-foreground);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface: var(--card);
+  --color-surface-container: var(--muted);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-on-surface: var(--foreground);
+  --color-on-surface-variant: var(--muted-foreground);
+  --color-success: var(--success);
+  --color-error: var(--destructive);
+  --color-warning: var(--warning);
+  --color-warm-pink: var(--warm-pink);
+  --color-warm-cream: var(--warm-cream);
+  --color-warm-white: var(--warm-white);
+  --color-outline: var(--border);
+  --color-outline-variant: var(--outline-variant);
+  --shadow-card: 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-float: 0 10px 25px rgba(0,0,0,0.08);
+  --shadow-dialog: 0 25px 50px rgba(0,0,0,0.12);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --font-sans: system-ui, sans-serif;
+
 }
 
 page,
