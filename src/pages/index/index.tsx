@@ -69,11 +69,11 @@ const getTypeStyle = (type: string) => {
 }
 
 const PRINCIPLES = [
-  '不冷漠不敷衍',
-  '不油腻不越界',
-  '不承诺线下见面',
-  '不给无法兑现的承诺',
-  '保持温暖但清晰的边界感',
+  '可以撒娇暧昧但不越界',
+  '让粉丝感到被偏爱被记住',
+  '不承诺线下见面和现实恋爱',
+  '不用PUA、威胁、卖惨方式',
+  '像微信聊天一样自然',
 ]
 
 /** 安全区顶部高度 */
@@ -480,7 +480,7 @@ const IndexPage = () => {
             >
               <View className="flex flex-row items-center gap-1 mb-1">
                 <MessageCircleHeart size={11} color="#D98C9A" />
-                <Text className="block text-xs font-bold" style={{ color: '#D98C9A' }}>温柔安抚</Text>
+                <Text className="block text-xs font-bold" style={{ color: '#D98C9A' }}>温柔撒娇</Text>
               </View>
               <Text className="block text-xs leading-snug" style={{ color: '#2F2523' }}>{result.gentleReply}</Text>
             </View>
@@ -493,7 +493,7 @@ const IndexPage = () => {
             >
               <View className="flex flex-row items-center gap-1 mb-1">
                 <Smile size={11} color="#C77763" />
-                <Text className="block text-xs font-bold" style={{ color: '#C77763' }}>轻松互动</Text>
+                <Text className="block text-xs font-bold" style={{ color: '#C77763' }}>轻松暧昧</Text>
               </View>
               <Text className="block text-xs leading-snug" style={{ color: '#2F2523' }}>{result.casualReply}</Text>
             </View>
@@ -506,7 +506,7 @@ const IndexPage = () => {
             >
               <View className="flex flex-row items-center gap-1 mb-1">
                 <ShieldCheck size={11} color="#7A8061" />
-                <Text className="block text-xs font-bold" style={{ color: '#7A8061' }}>边界清晰</Text>
+                <Text className="block text-xs font-bold" style={{ color: '#7A8061' }}>甜而不腻</Text>
               </View>
               <Text className="block text-xs leading-snug" style={{ color: '#2F2523' }}>{result.boundaryReply}</Text>
             </View>
