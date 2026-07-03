@@ -33,6 +33,25 @@ interface AnalysisResult {
   badReason: string
 }
 
+/** 消息类型配置 - 与飞书测试表对应 */
+const MESSAGE_TYPE_CONFIG: Record<string, { color: string; bg: string; icon: string }> = {
+  '抱怨回复慢': { color: '#D98C9A', bg: '#FDE2E4', icon: 'clock' },
+  '情绪低落':   { color: '#7A8061', bg: '#F0EDE4', icon: 'cloud' },
+  '暧昧试探':   { color: '#C77763', bg: '#FFF1DE', icon: 'heart' },
+  '消费后求关注': { color: '#B07D4F', bg: '#FFF5E6', icon: 'gift' },
+  '直播安排询问': { color: '#5B8A72', bg: '#E8F5EE', icon: 'calendar' },
+  '普通互动':   { color: '#6B8EB5', bg: '#E8F0F8', icon: 'chat' },
+  '冷场唤回':   { color: '#8B7EB5', bg: '#F0EAF8', icon: 'revive' },
+  '轻微不满':   { color: '#B5914F', bg: '#FFF8E8', icon: 'frown' },
+  '边界试探':   { color: '#B55A5A', bg: '#FDE8E8', icon: 'shield' },
+  '其他':       { color: '#7A8061', bg: '#F0EDE4', icon: 'help' },
+}
+
+const getTypeStyle = (type: string) => {
+  const config = MESSAGE_TYPE_CONFIG[type] || MESSAGE_TYPE_CONFIG['其他']
+  return config
+}
+
 const PRINCIPLES = [
   '不冷漠不敷衍',
   '不油腻不越界',
@@ -180,8 +199,16 @@ const IndexPage = () => {
                     <Stamp size={14} color="#D98C9A" />
                     <Text className="block text-xs font-semibold text-muted-foreground">类型</Text>
                   </View>
-                  <View className="inline-flex items-center px-3 py-1 rounded-full bg-primary-container">
-                    <Text className="text-xs font-bold text-primary">{result.messageType}</Text>
+                  <View
+                    className="inline-flex items-center px-3 py-1 rounded-full"
+                    style={{ backgroundColor: getTypeStyle(result.messageType).bg }}
+                  >
+                    <Text
+                      className="text-xs font-bold"
+                      style={{ color: getTypeStyle(result.messageType).color }}
+                    >
+                      {result.messageType}
+                    </Text>
                   </View>
                 </View>
                 <View className="flex flex-row items-start gap-2 mt-3">
