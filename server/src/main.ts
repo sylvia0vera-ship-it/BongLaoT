@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@/app.module';
 import * as express from 'express';
 import { HttpStatusInterceptor } from '@/interceptors/http-status.interceptor';
+import { join } from 'node:path';
 
 function parsePort(): number {
   const args = process.argv.slice(2);
@@ -31,6 +32,18 @@ async function bootstrap() {
   // 1. 开启优雅关闭 Hooks (关键!)
   app.enableShutdownHooks();
 
+  // 静态文件服务：生产模式下提供 H5 构建产物
+  const h5DistPath = join(__dirname, '..', '..', 'dist-web');
+  app.use(express.static(h5DistPath));
+  // SPA fallback：未匹配的路由返回 index.html
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(join(h5DistPath, 'index.html'));
+    } else {
+      next();
+    }
+  });
+
   // 2. 解析端口
   const port = parsePort();
   try {
@@ -38,12 +51,12 @@ async function bootstrap() {
     console.log(`Server running on http://localhost:${port}`);
   } catch (err) {
     if (err.code === 'EADDRINUSE') {
-      console.error(`❌ 端口 \({port} 被占用! 请运行 'npx kill-port \){port}' 然后重试。`);
+      console.error(`❌ 端口 ${port} 被占用! 请运行 'npx kill-port ${port}' 然后重试。`);
       process.exit(1);
     } else {
       throw err;
     }
   }
-  console.log(`Application is running on: http://localhost:3000`);
+  console.log(`Application is running on: http://localhost:${port}`);
 }
 bootstrap();
