@@ -102,25 +102,25 @@ const IndexPage = () => {
       <View className="flex-1 overflow-y-auto pb-8">
         {/* ===== 消息输入区 ===== */}
         <View className="px-4 pt-4 pb-6">
-          <View className="bg-card rounded-2xl p-4 shadow-card">
+          <View className="bg-card rounded-2xl p-4 shadow-sm">
             {/* 主输入框 */}
-            <Textarea
-              className="border-none bg-muted rounded-xl px-4 py-3 ring-0 ring-offset-0 focus-within:ring-0 focus-within:border-none"
-              style={{ width: '100%', minHeight: '80px', backgroundColor: 'transparent', fontSize: '14px' }}
-              placeholder="粘贴粉丝发来的微信消息..."
-              placeholderClass="text-muted-foreground"
-              value={message}
-              onInput={(e) => setMessage(e.detail.value)}
-              maxlength={500}
-            />
+            <View className="bg-muted rounded-xl px-4 py-3">
+              <Textarea
+                className="h-auto border-none bg-transparent ring-0 ring-offset-0 focus-within:ring-0 focus-within:border-none"
+                style={{ width: '100%', minHeight: '80px', backgroundColor: 'transparent', fontSize: '14px' }}
+                placeholder="粘贴粉丝发来的微信消息..."
+                value={message}
+                onInput={(e) => setMessage(e.detail.value)}
+                maxlength={500}
+              />
+            </View>
 
             {/* 补充背景输入框 */}
-            <View className="mt-3">
+            <View className="mt-3 bg-muted rounded-xl px-4 py-3">
               <Textarea
-                className="border-none bg-muted rounded-xl px-4 py-3 ring-0 ring-offset-0 focus-within:ring-0 focus-within:border-none"
+                className="h-auto border-none bg-transparent ring-0 ring-offset-0 focus-within:ring-0 focus-within:border-none"
                 style={{ width: '100%', minHeight: '50px', backgroundColor: 'transparent', fontSize: '12px' }}
                 placeholder="补充粉丝背景（可选），如「大R粉丝，月消费5k+」"
-                placeholderClass="text-muted-foreground"
                 value={context}
                 onInput={(e) => setContext(e.detail.value)}
                 maxlength={200}
@@ -153,7 +153,7 @@ const IndexPage = () => {
           <>
             {/* 原始消息回显 */}
             <View className="px-4 pb-4">
-              <View className="bg-card rounded-2xl p-4 shadow-card">
+              <View className="bg-card rounded-2xl p-4 shadow-sm">
                 <View className="flex flex-row items-center gap-2 mb-2">
                   <MessageSquare size={16} color="#7A8061" />
                   <Text className="block text-xs font-semibold text-muted-foreground">粉丝消息</Text>
@@ -167,7 +167,7 @@ const IndexPage = () => {
 
             {/* 消息类型判断 */}
             <View className="px-4 pb-4">
-              <View className="bg-card rounded-2xl p-4 shadow-card">
+              <View className="bg-card rounded-2xl p-4 shadow-sm">
                 <View className="flex flex-row items-center gap-2 mb-3">
                   <Stamp size={16} color="#D98C9A" />
                   <Text className="block text-sm font-semibold text-foreground">消息类型</Text>
@@ -180,7 +180,7 @@ const IndexPage = () => {
 
             {/* 情绪判断 */}
             <View className="px-4 pb-4">
-              <View className="bg-card rounded-2xl p-4 shadow-card">
+              <View className="bg-card rounded-2xl p-4 shadow-sm">
                 <View className="flex flex-row items-center gap-2 mb-2">
                   <HeartPulse size={16} color="#D98C9A" />
                   <Text className="block text-sm font-semibold text-foreground">情绪判断</Text>
@@ -191,7 +191,7 @@ const IndexPage = () => {
 
             {/* 注意事项 */}
             <View className="px-4 pb-4">
-              <View className="bg-card rounded-2xl p-4 shadow-card">
+              <View className="bg-card rounded-2xl p-4 shadow-sm">
                 <View className="flex flex-row items-center gap-2 mb-2">
                   <ShieldAlert size={16} color="#C77763" />
                   <Text className="block text-sm font-semibold text-foreground">注意事项</Text>
@@ -217,7 +217,7 @@ const IndexPage = () => {
               </View>
 
               {/* 温柔安抚版 */}
-              <View className="bg-warm-pink rounded-2xl p-4 shadow-card mb-3">
+              <View className="bg-warm-pink rounded-2xl p-4 shadow-sm mb-3">
                 <View className="flex flex-row items-center gap-2 mb-2">
                   <MessageCircleHeart size={16} color="#D98C9A" />
                   <Text className="block text-xs font-bold text-primary tracking-wide">温柔安抚版</Text>
@@ -233,7 +233,7 @@ const IndexPage = () => {
               </View>
 
               {/* 轻松互动版 */}
-              <View className="bg-warm-cream rounded-2xl p-4 shadow-card mb-3">
+              <View className="bg-warm-cream rounded-2xl p-4 shadow-sm mb-3">
                 <View className="flex flex-row items-center gap-2 mb-2">
                   <Smile size={16} color="#D98C9A" />
                   <Text className="block text-xs font-bold text-warning tracking-wide">轻松互动版</Text>
@@ -249,7 +249,7 @@ const IndexPage = () => {
               </View>
 
               {/* 边界清晰版 */}
-              <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-card mb-3">
+              <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm mb-3">
                 <View className="flex flex-row items-center gap-2 mb-2">
                   <ShieldCheck size={16} color="#7A8061" />
                   <Text className="block text-xs font-bold text-muted-foreground tracking-wide">边界清晰版</Text>
@@ -267,7 +267,7 @@ const IndexPage = () => {
 
             {/* ===== 避雷提醒区 ===== */}
             <View className="px-4 pb-4">
-              <View className="bg-warm-white rounded-2xl p-4 shadow-card border border-destructive border-opacity-20">
+              <View className="bg-warm-white rounded-2xl p-4 shadow-sm border border-destructive border-opacity-20">
                 <View className="flex flex-row items-center gap-2 mb-3">
                   <TriangleAlert size={16} color="#C77763" />
                   <Text className="block text-sm font-semibold text-destructive">避雷提醒</Text>
@@ -291,7 +291,7 @@ const IndexPage = () => {
 
         {/* ===== 底部原则提示 ===== */}
         <View className="px-4 pb-8">
-          <View className="bg-warm-white rounded-2xl p-4 shadow-card">
+          <View className="bg-warm-white rounded-2xl p-4 shadow-sm">
             <View className="flex flex-row items-center gap-2 mb-3">
               <Compass size={16} color="#D98C9A" />
               <Text className="block text-sm font-semibold text-foreground">核心原则</Text>
