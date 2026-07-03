@@ -132,8 +132,8 @@ export default defineConfig<'vite'>(async (merge, _env) => {
                 hmr: {
                   overlay: true,
                   path: '/hot/vite-hmr',
-                  port: 6000,
-                  clientPort: 443,
+                  port: 5000,
+                  clientPort: 5000,
                   timeout: 30000,
                 },
               },
