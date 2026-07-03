@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { LLMClient, Config, HeaderUtils } from 'coze-coding-dev-sdk'
+import { LLMClient, Config, HeaderUtils, Message } from 'coze-coding-dev-sdk'
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 
@@ -111,7 +111,7 @@ ${REFERENCE_CASES}
 
 @Injectable()
 export class AnalyzeService {
-  async analyze(message: string, context: string, fanId?: string): Promise<AnalysisResult> {
+  async analyze(message: string, context: string, fanId?: string, imageUrl?: string): Promise<AnalysisResult> {
     const config = new Config()
     const client = new LLMClient(config)
 
@@ -159,10 +159,35 @@ export class AnalyzeService {
       ? `粉丝消息：「${message}」\n粉丝背景：${context}${memoryContext}`
       : `粉丝消息：「${message}」${memoryContext}`
 
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    // 构建消息列表，支持多模态（图片+文字）
+    const messages: Message[] = [
       { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userContent },
     ]
+
+    if (imageUrl) {
+      // 下载图片并转为 base64 data URL（豆包模型不支持签名 URL）
+      let base64DataUrl = imageUrl
+      try {
+        const imageResp = await fetch(imageUrl)
+        const imageBuffer = Buffer.from(await imageResp.arrayBuffer())
+        const mimeType = imageResp.headers.get('content-type') || 'image/jpeg'
+        const base64 = imageBuffer.toString('base64')
+        base64DataUrl = `data:${mimeType};base64,${base64}`
+        console.log('图片已下载并转为 base64, 大小:', imageBuffer.length)
+      } catch (e) {
+        console.error('下载图片失败，使用原始 URL:', e.message)
+      }
+
+      messages.push({
+        role: 'user',
+        content: [
+          { type: 'image_url', image_url: { url: base64DataUrl } },
+          { type: 'text', text: userContent + '\n\n【附加说明】：用户还上传了一张聊天截图，请结合图片中的对话内容一起分析，生成回复建议。' },
+        ],
+      })
+    } else {
+      messages.push({ role: 'user', content: userContent })
+    }
 
     const response = await client.invoke(messages, {
       model: 'doubao-seed-2-0-mini-260215',

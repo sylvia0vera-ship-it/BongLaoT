@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text } from '@tarojs/components'
+import { View, Text, Image } from '@tarojs/components'
 import { Input } from '@/components/ui/input'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
@@ -20,6 +20,7 @@ import {
   X,
   BookHeart,
   StickyNote,
+  ImagePlus,
 } from 'lucide-react-taro'
 
 /** 分析结果类型 */
@@ -94,6 +95,9 @@ const IndexPage = () => {
   const [fans, setFans] = useState<FanBrief[]>([])
   const [selectedFanId, setSelectedFanId] = useState('')
   const [showFanPicker, setShowFanPicker] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
+  const [imagePreview, setImagePreview] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   // 加载粉丝列表
   useEffect(() => {
@@ -133,6 +137,40 @@ const IndexPage = () => {
 
   const selectedFan = fans.find(f => f.id === selectedFanId)
 
+  const handleChooseImage = async () => {
+    try {
+      const res = await Taro.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
+      })
+      const tempPath = res.tempFilePaths[0]
+      setImagePreview(tempPath)
+      setUploading(true)
+
+      const uploadRes = await Network.uploadFile({
+        url: '/api/upload-image',
+        filePath: tempPath,
+        name: 'file',
+      })
+      console.log('图片上传响应:', uploadRes.data)
+      const resData = typeof uploadRes.data === 'string' ? JSON.parse(uploadRes.data) : uploadRes.data
+      const data = resData?.data
+      if (data?.url) {
+        setImageUrl(data.url)
+        Taro.showToast({ title: '图片已上传', icon: 'success', duration: 1000 })
+      } else {
+        Taro.showToast({ title: '上传失败', icon: 'none' })
+        setImagePreview('')
+      }
+    } catch (err) {
+      console.error('选择图片失败:', err)
+      setImagePreview('')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const handleAnalyze = async () => {
     const trimmed = message.trim()
     if (!trimmed) {
@@ -151,6 +189,7 @@ const IndexPage = () => {
           message: trimmed,
           context: context.trim(),
           fan_id: selectedFanId || undefined,
+          image_url: imageUrl || undefined,
         },
       })
 
@@ -316,7 +355,7 @@ const IndexPage = () => {
 
             {/* 补充背景 */}
             <View
-              className="rounded-xl px-3 py-2 mb-3"
+              className="rounded-xl px-3 py-2 mb-2"
               style={{ backgroundColor: '#FFF7F2' }}
             >
               <Input
@@ -328,6 +367,39 @@ const IndexPage = () => {
                 onInput={(e) => setContext(e.detail.value)}
                 maxlength={200}
               />
+            </View>
+
+            {/* 图片上传 - 便签式 */}
+            <View className="mb-3">
+              {imagePreview ? (
+                <View className="relative rounded-xl overflow-hidden" style={{ backgroundColor: '#FFF7F2' }}>
+                  <View className="flex flex-row items-center gap-2 p-2">
+                    <View className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
+                      <Image src={imagePreview} className="w-full h-full" mode="aspectFill" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="block text-xs font-bold" style={{ color: '#2F2523' }}>已添加截图</Text>
+                      <Text className="block text-xs" style={{ color: '#7A8061' }}>{uploading ? '上传中...' : 'AI 会识别图片内容'}</Text>
+                    </View>
+                    <View
+                      className="w-6 h-6 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: '#FDE2E4' }}
+                      onClick={() => { setImagePreview(''); setImageUrl('') }}
+                    >
+                      <X size={12} color="#D98C9A" />
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <View
+                  className="flex flex-row items-center justify-center gap-2 rounded-xl py-2"
+                  style={{ backgroundColor: '#FFF7F2', border: '1px dashed #E8C9C4' }}
+                  onClick={handleChooseImage}
+                >
+                  <ImagePlus size={14} color="#D98C9A" />
+                  <Text className="block text-xs" style={{ color: '#D98C9A' }}>上传聊天截图（可选）</Text>
+                </View>
+              )}
             </View>
 
             {/* 分析按钮 - 印章风格 */}
