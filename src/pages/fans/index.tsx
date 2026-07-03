@@ -14,6 +14,8 @@ import {
   Tag,
   NotebookPen,
   Loader,
+  BookHeart,
+  StickyNote,
 } from 'lucide-react-taro'
 
 /** 安全区顶部高度 */
@@ -152,37 +154,40 @@ const IndexPage = () => {
     return LEVEL_CONFIG[level] || LEVEL_CONFIG['普通']
   }
 
-  // 编辑面板
+  // 编辑面板 - 便签风格
   if (showEditor) {
     return (
-      <View className="flex flex-col min-h-screen bg-background">
+      <View className="flex flex-col min-h-screen" style={{ backgroundColor: '#F8EDEB' }}>
         <View
-          className="bg-background sticky top-0 z-40 px-4 pb-2"
-          style={{ paddingTop: `${STATUS_BAR_HEIGHT + 8}px` }}
+          className="px-5 pb-3"
+          style={{ paddingTop: `${STATUS_BAR_HEIGHT + 12}px` }}
         >
           <View className="flex flex-row items-center justify-between">
             <View onClick={() => setShowEditor(false)} className="flex flex-row items-center gap-1">
               <ArrowLeft size={18} color="#7A8061" />
-              <Text className="block text-sm text-muted-foreground">返回</Text>
+              <Text className="block text-sm" style={{ color: '#7A8061' }}>返回</Text>
             </View>
-            <Text className="block text-base font-bold text-foreground">{editFan ? '编辑粉丝' : '添加粉丝'}</Text>
+            <Text className="block text-base font-bold" style={{ color: '#2F2523' }}>{editFan ? '编辑粉丝' : '添加粉丝'}</Text>
             <View onClick={handleSave} style={{ opacity: saving ? 0.6 : 1 }}>
-              {saving ? <Loader size={16} color="#D98C9A" className="animate-spin" /> : <Check size={18} color="#D98C9A" />}
+              {saving ? <Loader size={16} color="#A85D6A" className="animate-spin" /> : <Check size={18} color="#A85D6A" />}
             </View>
           </View>
         </View>
 
-        <View className="flex-1 px-4 pt-4">
-          {/* 昵称 */}
+        <View className="flex-1 px-5 pt-2">
+          {/* 昵称 - 浅粉便签 */}
           <View className="mb-4">
             <View className="flex flex-row items-center gap-1 mb-2">
-              <Users size={12} color="#D98C9A" />
-              <Text className="block text-xs font-semibold text-muted-foreground">昵称 *</Text>
+              <Users size={12} color="#A85D6A" />
+              <Text className="block text-xs font-bold" style={{ color: '#A85D6A' }}>昵称 *</Text>
             </View>
-            <View className="bg-card rounded-xl px-4 py-3" style={{ boxShadow: '0 1px 4px rgba(217,140,154,0.06)' }}>
+            <View
+              className="rounded-xl px-3 py-2"
+              style={{ backgroundColor: '#FDE2E4', border: '1px dashed #E8C9C4' }}
+            >
               <Input
-                className="w-full bg-transparent border-none p-0 shadow-none ring-0"
-                style={{ fontSize: '14px' }}
+                className="bg-transparent border-none p-0 shadow-none ring-0"
+                style={{ fontSize: '14px', width: '100%' }}
                 placeholder="粉丝的微信昵称或备注名"
                 placeholderClass="text-gray-400"
                 value={formName}
@@ -192,11 +197,11 @@ const IndexPage = () => {
             </View>
           </View>
 
-          {/* 关系等级 */}
+          {/* 关系等级 - 手写标签 */}
           <View className="mb-4">
             <View className="flex flex-row items-center gap-1 mb-2">
-              <Star size={12} color="#D98C9A" />
-              <Text className="block text-xs font-semibold text-muted-foreground">关系等级</Text>
+              <Star size={12} color="#A85D6A" />
+              <Text className="block text-xs font-bold" style={{ color: '#A85D6A' }}>关系等级</Text>
             </View>
             <View className="flex flex-row gap-2">
               {LEVELS.map((level) => {
@@ -208,28 +213,30 @@ const IndexPage = () => {
                     onClick={() => setFormLevel(level)}
                     className="rounded-full px-3 py-1"
                     style={{
-                      backgroundColor: selected ? style.bg : '#f5f5f5',
-                      borderWidth: selected ? '1px' : '1px',
-                      borderColor: selected ? style.color : '#e5e5e5',
+                      backgroundColor: selected ? style.bg : '#FFF7F2',
+                      border: selected ? `1px solid ${style.color}` : '1px dashed #E8C9C4',
                     }}
                   >
-                    <Text className="text-xs" style={{ color: selected ? style.color : '#999' }}>{level}</Text>
+                    <Text className="text-xs font-bold" style={{ color: selected ? style.color : '#999' }}>{level}</Text>
                   </View>
                 )
               })}
             </View>
           </View>
 
-          {/* 标签 */}
+          {/* 标签 - 奶油便签 */}
           <View className="mb-4">
             <View className="flex flex-row items-center gap-1 mb-2">
-              <Tag size={12} color="#D98C9A" />
-              <Text className="block text-xs font-semibold text-muted-foreground">标签</Text>
+              <Tag size={12} color="#A85D6A" />
+              <Text className="block text-xs font-bold" style={{ color: '#A85D6A' }}>标签</Text>
             </View>
-            <View className="bg-card rounded-xl px-4 py-3" style={{ boxShadow: '0 1px 4px rgba(217,140,154,0.06)' }}>
+            <View
+              className="rounded-xl px-3 py-2"
+              style={{ backgroundColor: '#FFF1DE', border: '1px dashed #E8C9C4' }}
+            >
               <Input
-                className="w-full bg-transparent border-none p-0 shadow-none ring-0"
-                style={{ fontSize: '14px' }}
+                className="bg-transparent border-none p-0 shadow-none ring-0"
+                style={{ fontSize: '14px', width: '100%' }}
                 placeholder="如：大R, 常互动, 暧昧试探（逗号分隔）"
                 placeholderClass="text-gray-400"
                 value={formTags}
@@ -239,16 +246,19 @@ const IndexPage = () => {
             </View>
           </View>
 
-          {/* 备注 */}
+          {/* 备注 - 白色便签 */}
           <View className="mb-4">
             <View className="flex flex-row items-center gap-1 mb-2">
-              <NotebookPen size={12} color="#D98C9A" />
-              <Text className="block text-xs font-semibold text-muted-foreground">备注</Text>
+              <NotebookPen size={12} color="#A85D6A" />
+              <Text className="block text-xs font-bold" style={{ color: '#A85D6A' }}>备注</Text>
             </View>
-            <View className="bg-card rounded-xl px-4 py-3" style={{ boxShadow: '0 1px 4px rgba(217,140,154,0.06)' }}>
+            <View
+              className="rounded-xl px-3 py-2"
+              style={{ backgroundColor: '#ffffff', border: '1px dashed #E8C9C4' }}
+            >
               <Input
-                className="w-full bg-transparent border-none p-0 shadow-none ring-0"
-                style={{ fontSize: '14px' }}
+                className="bg-transparent border-none p-0 shadow-none ring-0"
+                style={{ fontSize: '14px', width: '100%' }}
                 placeholder="关于这个粉丝的补充说明..."
                 placeholderClass="text-gray-400"
                 value={formNotes}
@@ -264,49 +274,49 @@ const IndexPage = () => {
 
   // 粉丝列表
   return (
-    <View className="flex flex-col min-h-screen bg-background">
+    <View className="flex flex-col min-h-screen" style={{ backgroundColor: '#F8EDEB' }}>
       <View
-        className="bg-background sticky top-0 z-40 px-4 pb-2"
-        style={{ paddingTop: `${STATUS_BAR_HEIGHT + 8}px` }}
+        className="px-5 pb-3"
+        style={{ paddingTop: `${STATUS_BAR_HEIGHT + 12}px` }}
       >
         <View className="flex flex-row items-center justify-between">
           <View className="flex flex-row items-center gap-2">
-            <Users size={20} color="#D98C9A" />
-            <Text className="block text-base font-bold text-foreground">粉丝管理</Text>
+            <BookHeart size={20} color="#A85D6A" />
+            <Text className="block text-lg font-bold" style={{ color: '#2F2523' }}>粉丝档案</Text>
           </View>
           <View
             onClick={openNewFan}
             className="flex flex-row items-center gap-1 rounded-full px-3 py-1"
-            style={{ backgroundColor: '#FDE2E4' }}
+            style={{ backgroundColor: '#FDE2E4', border: '1px dashed #D98C9A' }}
           >
-            <UserPlus size={14} color="#D98C9A" />
+            <UserPlus size={13} color="#D98C9A" />
             <Text className="text-xs font-bold" style={{ color: '#D98C9A' }}>添加</Text>
           </View>
         </View>
-        <Text className="block text-xs text-muted-foreground mt-1">管理粉丝档案，分析时自动带入记忆</Text>
+        <Text className="block text-xs mt-1" style={{ color: '#7A8061' }}>管理粉丝档案，分析时自动带入记忆</Text>
       </View>
 
-      <View className="flex-1 overflow-y-auto px-4 pt-3 pb-6">
+      <View className="flex-1 overflow-y-auto px-5 pt-2 pb-6">
         {loading ? (
           <View className="flex items-center justify-center py-16">
             <Loader size={24} color="#D98C9A" className="animate-spin" />
           </View>
         ) : fans.length === 0 ? (
           <View className="flex flex-col items-center justify-center py-16">
-            <Users size={48} color="#e5e5e5" />
-            <Text className="block text-sm text-muted-foreground mt-4">还没有粉丝档案</Text>
-            <Text className="block text-xs text-muted-foreground mt-1">点击右上角添加你的第一个粉丝</Text>
+            <StickyNote size={48} color="#E8C9C4" />
+            <Text className="block text-sm mt-4" style={{ color: '#7A8061' }}>还没有粉丝档案</Text>
+            <Text className="block text-xs mt-1" style={{ color: '#7A8061' }}>点击右上角添加你的第一个粉丝</Text>
           </View>
         ) : (
-          <View className="flex flex-col gap-2">
+          <View className="flex flex-col gap-3">
             {fans.map((fan) => {
               const levelStyle = getLevelStyle(fan.relationship_level)
               const tagList = fan.tags ? fan.tags.split(',').map(t => t.trim()).filter(Boolean) : []
               return (
                 <View
                   key={fan.id}
-                  className="bg-card rounded-2xl px-4 py-3"
-                  style={{ boxShadow: '0 2px 8px rgba(217,140,154,0.06)' }}
+                  className="rounded-2xl px-4 py-3"
+                  style={{ backgroundColor: '#ffffff', border: '1px dashed #E8C9C4' }}
                 >
                   <View className="flex flex-row items-center justify-between">
                     <View className="flex flex-row items-center gap-2 flex-1">
@@ -317,7 +327,7 @@ const IndexPage = () => {
                       </View>
                       <View className="flex-1">
                         <View className="flex flex-row items-center gap-2">
-                          <Text className="block text-sm font-bold text-foreground">{fan.name}</Text>
+                          <Text className="block text-sm font-bold" style={{ color: '#2F2523' }}>{fan.name}</Text>
                           <View
                             className="inline-flex items-center px-2 py-0 rounded-full"
                             style={{ backgroundColor: levelStyle.bg }}
@@ -330,8 +340,8 @@ const IndexPage = () => {
                         {tagList.length > 0 && (
                           <View className="flex flex-row flex-wrap gap-1 mt-1">
                             {tagList.map((tag, i) => (
-                              <View key={i} className="rounded-full px-2 py-0 bg-muted">
-                                <Text className="text-xs text-muted-foreground">{tag}</Text>
+                              <View key={i} className="rounded-full px-2 py-0" style={{ backgroundColor: '#FFF1DE' }}>
+                                <Text className="text-xs" style={{ color: '#C77763' }}>{tag}</Text>
                               </View>
                             ))}
                           </View>
@@ -341,20 +351,24 @@ const IndexPage = () => {
                     <View className="flex flex-row items-center gap-2">
                       <View
                         onClick={() => openEditFan(fan)}
-                        className="w-7 h-7 flex items-center justify-center rounded-full bg-muted"
+                        className="w-7 h-7 flex items-center justify-center rounded-full"
+                        style={{ backgroundColor: '#FFF7F2' }}
                       >
                         <PenLine size={12} color="#7A8061" />
                       </View>
                       <View
                         onClick={() => handleDelete(fan.id)}
-                        className="w-7 h-7 flex items-center justify-center rounded-full bg-muted"
+                        className="w-7 h-7 flex items-center justify-center rounded-full"
+                        style={{ backgroundColor: '#FDE8E8' }}
                       >
                         <Trash2 size={12} color="#B55A5A" />
                       </View>
                     </View>
                   </View>
                   {fan.notes && (
-                    <Text className="block text-xs text-muted-foreground mt-2 pl-10">{fan.notes}</Text>
+                    <View className="mt-2 ml-10 rounded-lg px-2 py-1" style={{ backgroundColor: '#FFF7F2' }}>
+                      <Text className="block text-xs" style={{ color: '#7A8061' }}>{fan.notes}</Text>
+                    </View>
                   )}
                 </View>
               )
