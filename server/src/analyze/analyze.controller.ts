@@ -7,9 +7,13 @@ export class AnalyzeController {
 
   @Post()
   async analyzeMessage(
-    @Body() body: { message: string; context?: string },
+    @Body() body: { message: string; context?: string; fan_id?: string },
   ): Promise<{ status: string; data: AnalysisResult }> {
-    const result = await this.analyzeService.analyze(body.message, body.context || '')
+    const result = await this.analyzeService.analyze(
+      body.message,
+      body.context || '',
+      body.fan_id,
+    )
     return { status: 'success', data: result }
   }
 }

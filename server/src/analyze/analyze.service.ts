@@ -1,5 +1,16 @@
 import { Injectable } from '@nestjs/common'
 import { LLMClient, Config, HeaderUtils } from 'coze-coding-dev-sdk'
+import { createClient } from '@supabase/supabase-js'
+import * as dotenv from 'dotenv'
+
+dotenv.config()
+
+function getSupabaseClient() {
+  const url = process.env.SUPABASE_URL || ''
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  if (!url || !key) return null
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+}
 
 export interface AnalysisResult {
   messageType: string
@@ -100,13 +111,53 @@ ${REFERENCE_CASES}
 
 @Injectable()
 export class AnalyzeService {
-  async analyze(message: string, context: string): Promise<AnalysisResult> {
+  async analyze(message: string, context: string, fanId?: string): Promise<AnalysisResult> {
     const config = new Config()
     const client = new LLMClient(config)
 
+    // 构建用户记忆上下文
+    let memoryContext = ''
+    if (fanId) {
+      try {
+        const supabase = getSupabaseClient()
+        if (supabase) {
+          // 查询粉丝档案
+          const { data: fan } = await supabase
+            .from('fans')
+            .select('name, tags, notes, relationship_level')
+            .eq('id', fanId)
+            .single()
+
+          if (fan) {
+            memoryContext += `\n\n【当前粉丝档案】\n姓名：${fan.name}\n关系等级：${fan.relationship_level}\n标签：${fan.tags || '无'}\n备注：${fan.notes || '无'}`
+          }
+
+          // 查询最近5条对话记录
+          const { data: chatLogs } = await supabase
+            .from('fan_chat_logs')
+            .select('message, analysis_result, created_at')
+            .eq('fan_id', fanId)
+            .order('created_at', { ascending: false })
+            .limit(5)
+
+          if (chatLogs && chatLogs.length > 0) {
+            memoryContext += '\n\n【近期对话记录（最新5条）】'
+            const logs = [...chatLogs].reverse() // 按时间正序
+            for (const log of logs) {
+              const analysis = log.analysis_result as Record<string, string> | null
+              const typeLabel = analysis?.messageType || ''
+              memoryContext += `\n- 粉丝说：「${log.message}」→ 类型：${typeLabel}`
+            }
+          }
+        }
+      } catch (err) {
+        console.error('获取粉丝记忆失败:', err)
+      }
+    }
+
     const userContent = context
-      ? `粉丝消息：「${message}」\n粉丝背景：${context}`
-      : `粉丝消息：「${message}」`
+      ? `粉丝消息：「${message}」\n粉丝背景：${context}${memoryContext}`
+      : `粉丝消息：「${message}」${memoryContext}`
 
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -128,16 +179,31 @@ export class AnalyzeService {
       if (jsonMatch) {
         jsonStr = jsonMatch[1].trim()
       }
-      const parsed = JSON.parse(jsonStr)
+      // 清理中文引号和特殊字符
+      jsonStr = jsonStr
+        .replace(/[\u201c\u201d\u00ab\u00bb]/g, '\u201c')  // 中文/书名号双引号 → 统一为中文左双引号（避免破坏JSON结构）
+        .replace(/[\u2018\u2019]/g, "'")  // 中文单引号 → 英文单引号
+        .replace(/,\s*([}\]])/g, '$1')    // 移除尾部多余逗号
+
+      // 尝试直接解析，如果失败则尝试更激进的修复
+      type ParsedResult = Record<string, string | Array<{ label: string; detail: string }>>
+      let parsed: ParsedResult
+      try {
+        parsed = JSON.parse(jsonStr) as ParsedResult
+      } catch {
+        // 如果解析失败，尝试逐字段提取
+        console.log('JSON 直接解析失败，尝试逐字段提取...')
+        parsed = this.extractFieldsManually(jsonStr)
+      }
       return {
-        messageType: parsed.messageType || '其他',
-        emotion: parsed.emotion || '无法判断',
+        messageType: (parsed.messageType as string) || '其他',
+        emotion: (parsed.emotion as string) || '无法判断',
         warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
-        gentleReply: parsed.gentleReply || '',
-        casualReply: parsed.casualReply || '',
-        boundaryReply: parsed.boundaryReply || '',
-        badReply: parsed.badReply || '',
-        badReason: parsed.badReason || '',
+        gentleReply: (parsed.gentleReply as string) || '',
+        casualReply: (parsed.casualReply as string) || '',
+        boundaryReply: (parsed.boundaryReply as string) || '',
+        badReply: (parsed.badReply as string) || '',
+        badReason: (parsed.badReason as string) || '',
       }
     } catch (err) {
       console.error('解析 LLM 响应失败:', err)
@@ -152,5 +218,34 @@ export class AnalyzeService {
         badReason: 'AI 响应解析异常',
       }
     }
+  }
+
+  /** 当 JSON.parse 失败时，手动从文本中提取各字段 */
+  private extractFieldsManually(text: string): Record<string, string | Array<{ label: string; detail: string }>> {
+    const result: Record<string, string | Array<{ label: string; detail: string }>> = {}
+    
+    // 提取简单字符串字段
+    const stringFields = ['messageType', 'emotion', 'gentleReply', 'casualReply', 'boundaryReply', 'badReply', 'badReason']
+    for (const field of stringFields) {
+      // 匹配 "field": "value" 或 "field": value
+      const regex = new RegExp(`"${field}"\\s*:\\s*"([\\s\\S]*?)"\\s*[,}\\n]`)
+      const match = text.match(regex)
+      if (match) {
+        result[field] = match[1].trim()
+      }
+    }
+
+    // 提取 warnings 数组
+    const warningsMatch = text.match(/"warnings"\s*:\s*\[([\s\S]*?)\]/)
+    if (warningsMatch) {
+      const warnings: Array<{ label: string; detail: string }> = []
+      const items = warningsMatch[1].matchAll(/\{[^}]*"label"\s*:\s*"([^"]*?)"[^}]*"detail"\s*:\s*"([^"]*?)"[^}]*\}/g)
+      for (const item of items) {
+        warnings.push({ label: item[1], detail: item[2] })
+      }
+      result.warnings = warnings
+    }
+
+    return result
   }
 }

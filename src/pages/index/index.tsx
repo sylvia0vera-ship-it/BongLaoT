@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text } from '@tarojs/components'
 import { Input } from '@/components/ui/input'
 import Taro from '@tarojs/taro'
@@ -15,9 +15,10 @@ import {
   TriangleAlert,
   Ban,
   Smile,
-  Info,
-
   Loader,
+  Users,
+  ChevronDown,
+  X,
 } from 'lucide-react-taro'
 
 /** 分析结果类型 */
@@ -32,6 +33,14 @@ interface AnalysisResult {
   badReason: string
 }
 
+/** 粉丝简要信息 */
+interface FanBrief {
+  id: string
+  name: string
+  tags: string | null
+  relationship_level: string
+}
+
 /** 消息类型配置 - 与飞书测试表对应 */
 const MESSAGE_TYPE_CONFIG: Record<string, { color: string; bg: string; icon: string }> = {
   '抱怨回复慢': { color: '#D98C9A', bg: '#FDE2E4', icon: 'clock' },
@@ -44,6 +53,13 @@ const MESSAGE_TYPE_CONFIG: Record<string, { color: string; bg: string; icon: str
   '轻微不满':   { color: '#B5914F', bg: '#FFF8E8', icon: 'frown' },
   '边界试探':   { color: '#B55A5A', bg: '#FDE8E8', icon: 'shield' },
   '其他':       { color: '#7A8061', bg: '#F0EDE4', icon: 'help' },
+}
+
+const LEVEL_STYLE: Record<string, { color: string; bg: string }> = {
+  '新粉': { color: '#6B8EB5', bg: '#E8F0F8' },
+  '普通': { color: '#7A8061', bg: '#F0EDE4' },
+  '忠实': { color: '#5B8A72', bg: '#E8F5EE' },
+  '重点': { color: '#D98C9A', bg: '#FDE2E4' },
 }
 
 const getTypeStyle = (type: string) => {
@@ -64,6 +80,48 @@ const IndexPage = () => {
   const [context, setContext] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [fans, setFans] = useState<FanBrief[]>([])
+  const [selectedFanId, setSelectedFanId] = useState('')
+  const [showFanPicker, setShowFanPicker] = useState(false)
+
+  // 加载粉丝列表
+  useEffect(() => {
+    const fetchFans = async () => {
+      try {
+        const res = await Network.request({ url: '/api/fans' })
+        const data = res.data?.data
+        if (data) {
+          setFans(data.map((f: FanBrief) => ({ id: f.id, name: f.name, tags: f.tags, relationship_level: f.relationship_level })))
+        }
+      } catch (err) {
+        console.error('获取粉丝列表失败:', err)
+      }
+    }
+    fetchFans()
+  }, [])
+
+  // 从粉丝管理页返回时刷新列表
+  useEffect(() => {
+    const onShow = () => {
+      const fetchFans = async () => {
+        try {
+          const res = await Network.request({ url: '/api/fans' })
+          const data = res.data?.data
+          if (data) {
+            setFans(data.map((f: FanBrief) => ({ id: f.id, name: f.name, tags: f.tags, relationship_level: f.relationship_level })))
+          }
+        } catch (err) {
+          console.error('刷新粉丝列表失败:', err)
+        }
+      }
+      fetchFans()
+    }
+    // 页面显示时刷新
+    Taro.eventCenter.on('onShow', onShow)
+    return () => { Taro.eventCenter.off('onShow', onShow) }
+  }, [])
+
+  const selectedFan = fans.find(f => f.id === selectedFanId)
 
   const handleAnalyze = async () => {
     const trimmed = message.trim()
@@ -79,7 +137,11 @@ const IndexPage = () => {
       const res = await Network.request({
         url: '/api/analyze-message',
         method: 'POST',
-        data: { message: trimmed, context: context.trim() },
+        data: {
+          message: trimmed,
+          context: context.trim(),
+          fan_id: selectedFanId || undefined,
+        },
       })
 
       console.log('分析接口响应:', res.data)
@@ -87,6 +149,24 @@ const IndexPage = () => {
       const data = res.data?.data
       if (data) {
         setResult(data)
+
+        // 自动保存对话记录
+        if (selectedFanId) {
+          try {
+            await Network.request({
+              url: `/api/fans/${selectedFanId}/chat-logs`,
+              method: 'POST',
+              data: {
+                message: trimmed,
+                context: context.trim(),
+                analysis_result: data,
+              },
+            })
+            console.log('对话记录已自动保存')
+          } catch (err) {
+            console.error('保存对话记录失败:', err)
+          }
+        }
       } else {
         Taro.showToast({ title: '分析失败，请重试', icon: 'none' })
       }
@@ -104,15 +184,20 @@ const IndexPage = () => {
 
   return (
     <View className="flex flex-col min-h-screen bg-background">
-      {/* Header - 融入内容流 */}
+      {/* Header */}
       <View className="bg-background sticky top-0 z-40 px-4 pt-4 pb-2">
         <View className="flex flex-row items-center justify-between">
           <View className="flex flex-row items-center gap-2">
             <MessageCircleHeart size={20} color="#D98C9A" />
             <Text className="block text-base font-bold text-foreground">回复小助手</Text>
           </View>
-          <View className="w-7 h-7 flex items-center justify-center rounded-full bg-muted">
-            <Info size={14} color="#7A8061" />
+          <View className="flex flex-row items-center gap-2">
+            <View
+              onClick={() => Taro.navigateTo({ url: '/pages/fans/index' })}
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-muted"
+            >
+              <Users size={14} color="#7A8061" />
+            </View>
           </View>
         </View>
         <Text className="block text-xs text-muted-foreground mt-1">帮你拿捏分寸，轻松回复粉丝消息</Text>
@@ -120,9 +205,80 @@ const IndexPage = () => {
 
       {/* Scrollable Content */}
       <View className="flex-1 overflow-y-auto pb-6">
+        {/* ===== 粉丝选择 ===== */}
+        <View className="px-4 pt-1 pb-1">
+          <View
+            className="flex flex-row items-center justify-between rounded-xl px-3 py-2"
+            style={{ backgroundColor: '#ffffff', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+            onClick={() => setShowFanPicker(!showFanPicker)}
+          >
+            <View className="flex flex-row items-center gap-2">
+              <Users size={14} color="#D98C9A" />
+              {selectedFan ? (
+                <View className="flex flex-row items-center gap-2">
+                  <Text className="block text-xs font-bold text-foreground">{selectedFan.name}</Text>
+                  <View
+                    className="inline-flex items-center px-2 py-0 rounded-full"
+                    style={{ backgroundColor: (LEVEL_STYLE[selectedFan.relationship_level] || LEVEL_STYLE['普通']).bg }}
+                  >
+                    <Text className="text-xs font-bold" style={{ color: (LEVEL_STYLE[selectedFan.relationship_level] || LEVEL_STYLE['普通']).color }}>
+                      {selectedFan.relationship_level}
+                    </Text>
+                  </View>
+                  {selectedFan.tags && (
+                    <Text className="block text-xs text-muted-foreground">{selectedFan.tags}</Text>
+                  )}
+                </View>
+              ) : (
+                <Text className="block text-xs text-muted-foreground">选择粉丝（可选，带入记忆）</Text>
+              )}
+            </View>
+            <View className="flex flex-row items-center gap-1">
+              {selectedFanId && (
+                <View onClick={(e) => { e.stopPropagation && e.stopPropagation(); setSelectedFanId(''); setShowFanPicker(false) }}>
+                  <X size={14} color="#999" />
+                </View>
+              )}
+              <ChevronDown size={14} color="#999" />
+            </View>
+          </View>
+
+          {/* 粉丝选择下拉 */}
+          {showFanPicker && (
+            <View className="rounded-xl mt-1 overflow-hidden" style={{ backgroundColor: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', maxHeight: '200px' }}>
+              {fans.length === 0 ? (
+                <View className="px-4 py-3">
+                  <Text className="block text-xs text-muted-foreground">暂无粉丝档案，点击右上角添加</Text>
+                </View>
+              ) : (
+                fans.map((fan) => {
+                  const isSelected = selectedFanId === fan.id
+                  const levelS = LEVEL_STYLE[fan.relationship_level] || LEVEL_STYLE['普通']
+                  return (
+                    <View
+                      key={fan.id}
+                      className="flex flex-row items-center gap-2 px-4 py-2"
+                      style={{ backgroundColor: isSelected ? '#FDE2E4' : '#ffffff' }}
+                      onClick={() => { setSelectedFanId(isSelected ? '' : fan.id); setShowFanPicker(false) }}
+                    >
+                      <View className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: levelS.bg }}>
+                        <Text className="text-xs font-bold" style={{ color: levelS.color }}>{fan.name.charAt(0)}</Text>
+                      </View>
+                      <Text className="block text-xs font-bold text-foreground flex-1">{fan.name}</Text>
+                      <View className="inline-flex items-center px-2 py-0 rounded-full" style={{ backgroundColor: levelS.bg }}>
+                        <Text className="text-xs" style={{ color: levelS.color }}>{fan.relationship_level}</Text>
+                      </View>
+                    </View>
+                  )
+                })
+              )}
+            </View>
+          )}
+        </View>
+
         {/* ===== 消息输入区 ===== */}
-        <View className="px-4 pt-1 pb-3">
-          {/* 主输入框 - 胶囊型 */}
+        <View className="px-4 pt-2 pb-3">
+          {/* 主输入框 */}
           <View className="flex flex-row items-center" style={{ backgroundColor: '#ffffff', borderRadius: '999px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)', height: '46px', paddingLeft: '16px', paddingRight: '4px' }}>
             <View style={{ flex: 1 }}>
               <Input
@@ -162,11 +318,11 @@ const IndexPage = () => {
           </View>
         </View>
 
-        {/* ===== 分析结果 - 全部合一，紧凑展示 ===== */}
+        {/* ===== 分析结果 ===== */}
         {result && (
           <View className="px-4 pb-4">
             <View className="bg-card rounded-2xl overflow-hidden" style={{ boxShadow: '0 2px 10px rgba(217,140,154,0.10)' }}>
-              {/* 消息类型 + 情绪 - 一行紧凑 */}
+              {/* 消息类型 + 情绪 */}
               <View className="px-4 pt-3 pb-3">
                 <View className="flex flex-row items-center gap-2 flex-wrap">
                   <View className="flex flex-row items-center gap-1">
@@ -177,10 +333,7 @@ const IndexPage = () => {
                     className="inline-flex items-center px-2 py-0 rounded-full"
                     style={{ backgroundColor: getTypeStyle(result.messageType).bg }}
                   >
-                    <Text
-                      className="text-xs font-bold"
-                      style={{ color: getTypeStyle(result.messageType).color }}
-                    >
+                    <Text className="text-xs font-bold" style={{ color: getTypeStyle(result.messageType).color }}>
                       {result.messageType}
                     </Text>
                   </View>
@@ -192,7 +345,7 @@ const IndexPage = () => {
                 </View>
               </View>
 
-              {/* 注意事项 - 紧凑展示 */}
+              {/* 注意事项 */}
               {result.warnings && result.warnings.length > 0 && (
                 <>
                   <View className="mx-4 h-px bg-border" />
@@ -215,7 +368,6 @@ const IndexPage = () => {
                 </>
               )}
 
-              {/* 分隔线 */}
               <View className="mx-4 h-px bg-border" />
 
               {/* 回复建议 */}
@@ -226,7 +378,6 @@ const IndexPage = () => {
                   <Text className="block text-xs text-muted-foreground">· 点击复制</Text>
                 </View>
 
-                {/* 温柔安抚版 */}
                 <View
                   className="rounded-xl px-3 py-2 mb-2 active:bg-primary-container"
                   style={{ backgroundColor: '#FDE2E4' }}
@@ -239,7 +390,6 @@ const IndexPage = () => {
                   <Text className="block text-xs text-foreground leading-snug">{result.gentleReply}</Text>
                 </View>
 
-                {/* 轻松互动版 */}
                 <View
                   className="rounded-xl px-3 py-2 mb-2 active:bg-primary-container"
                   style={{ backgroundColor: '#FFF1DE' }}
@@ -252,7 +402,6 @@ const IndexPage = () => {
                   <Text className="block text-xs text-foreground leading-snug">{result.casualReply}</Text>
                 </View>
 
-                {/* 边界清晰版 */}
                 <View
                   className="rounded-xl px-3 py-2 active:bg-primary-container"
                   style={{ backgroundColor: '#F0EDE4' }}
@@ -266,7 +415,7 @@ const IndexPage = () => {
                 </View>
               </View>
 
-              {/* 避雷提醒 - 嵌入同一卡片 */}
+              {/* 避雷提醒 */}
               <View className="mx-4 h-px bg-border" />
               <View className="px-4 py-3" style={{ backgroundColor: '#FFF5F5' }}>
                 <View className="flex flex-row items-center gap-1 mb-1">
@@ -287,7 +436,7 @@ const IndexPage = () => {
           </View>
         )}
 
-        {/* ===== 底部原则提示 - 标签流 ===== */}
+        {/* 底部原则 */}
         <View className="px-4 pb-6">
           <View className="flex flex-row items-center gap-1 mb-2 px-1">
             <Compass size={12} color="#D98C9A" />
