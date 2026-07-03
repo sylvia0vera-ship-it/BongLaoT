@@ -38,7 +38,7 @@ const MESSAGE_TYPE_CONFIG: Record<string, { color: string; bg: string; icon: str
   '情绪低落':   { color: '#7A8061', bg: '#F0EDE4', icon: 'cloud' },
   '暧昧试探':   { color: '#C77763', bg: '#FFF1DE', icon: 'heart' },
   '消费后求关注': { color: '#B07D4F', bg: '#FFF5E6', icon: 'gift' },
-  '直播安排询问': { color: '#5B8A72', bg: '#E8F5EE', icon: 'calendar' },
+  '上线安排询问': { color: '#5B8A72', bg: '#E8F5EE', icon: 'calendar' },
   '普通互动':   { color: '#6B8EB5', bg: '#E8F0F8', icon: 'chat' },
   '冷场唤回':   { color: '#8B7EB5', bg: '#F0EAF8', icon: 'revive' },
   '轻微不满':   { color: '#B5914F', bg: '#FFF8E8', icon: 'frown' },
