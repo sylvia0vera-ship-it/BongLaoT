@@ -202,7 +202,7 @@ const IndexPage = () => {
         <View className="flex flex-row items-center justify-between">
           <View className="flex flex-row items-center gap-2">
             <BookHeart size={22} color="#A85D6A" />
-            <Text className="block text-lg font-bold" style={{ color: '#2F2523' }}>回复小助手</Text>
+            <Text className="block text-2xl font-bold" style={{ color: '#2F2523' }}>回复小助手</Text>
           </View>
           <View
             className="flex flex-row items-center gap-1 px-3 py-1 rounded-full"
