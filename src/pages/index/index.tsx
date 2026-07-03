@@ -3,557 +3,474 @@ import { View, Text, Image } from '@tarojs/components'
 import { Input } from '@/components/ui/input'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import {
-  MessageCircleHeart,
-  Sparkles,
-  Stamp,
-  HeartPulse,
-  ShieldAlert,
-  ShieldCheck,
-  PenTool,
-  TriangleAlert,
-  Ban,
-  Smile,
-  Loader,
-  Users,
-  ChevronDown,
-  X,
-  BookHeart,
-  StickyNote,
-  ImagePlus,
-} from 'lucide-react-taro'
+import { BookHeart, ImagePlus, X, Users, Sparkles } from 'lucide-react-taro'
 
-/** 分析结果类型 */
-interface AnalysisResult {
-  messageType: string
-  emotion: string
-  warnings: { label: string; detail: string }[]
-  gentleReply: string
-  casualReply: string
-  boundaryReply: string
-  badReply: string
-  badReason: string
-}
+const STATUS_BAR_HEIGHT = Taro.getSystemInfoSync().statusBarHeight || 0
+const HEADER_TOP = STATUS_BAR_HEIGHT + 40 + 8
 
-/** 粉丝简要信息 */
-interface FanBrief {
-  id: string
-  name: string
-  tags: string | null
-  relationship_level: string
-}
-
-/** 消息类型配置 - 与飞书测试表对应 */
-const MESSAGE_TYPE_CONFIG: Record<string, { color: string; bg: string }> = {
-  '抱怨回复慢': { color: '#D98C9A', bg: '#FDE2E4' },
-  '情绪低落':   { color: '#7A8061', bg: '#F0EDE4' },
-  '暧昧试探':   { color: '#C77763', bg: '#FFF1DE' },
-  '消费后求关注': { color: '#B07D4F', bg: '#FFF5E6' },
-  '上线安排询问': { color: '#5B8A72', bg: '#E8F5EE' },
-  '普通互动':   { color: '#6B8EB5', bg: '#E8F0F8' },
-  '冷场唤回':   { color: '#8B7EB5', bg: '#F0EAF8' },
-  '轻微不满':   { color: '#B5914F', bg: '#FFF8E8' },
-  '边界试探':   { color: '#B55A5A', bg: '#FDE8E8' },
-  '其他':       { color: '#7A8061', bg: '#F0EDE4' },
-}
-
-const LEVEL_STYLE: Record<string, { color: string; bg: string }> = {
-  '新粉': { color: '#6B8EB5', bg: '#E8F0F8' },
-  '普通': { color: '#7A8061', bg: '#F0EDE4' },
-  '忠实': { color: '#5B8A72', bg: '#E8F5EE' },
-  '重点': { color: '#D98C9A', bg: '#FDE2E4' },
-}
-
-const getTypeStyle = (type: string) => {
-  return MESSAGE_TYPE_CONFIG[type] || MESSAGE_TYPE_CONFIG['其他']
-}
-
-const PRINCIPLES = [
-  '可以撒娇暧昧但不越界',
-  '让粉丝感到被偏爱被记住',
-  '不承诺线下见面和现实恋爱',
-  '不用PUA、威胁、卖惨方式',
-  '像微信聊天一样自然',
+/** 人设类型 */
+const PERSONA_OPTIONS = [
+  { key: '温柔陪伴', label: '温柔陪伴', emoji: '🤍' },
+  { key: '女友感', label: '女友感', emoji: '💕' },
+  { key: '撒娇型', label: '撒娇型', emoji: '🥺' },
+  { key: '成熟姐姐', label: '成熟姐姐', emoji: '✨' },
+  { key: '轻松朋友', label: '轻松朋友', emoji: '👋' },
 ]
 
-/** 安全区顶部高度 */
-/** 安全区顶部高度（状态栏 + 胶囊按钮区域 + 间距） */
-const HEADER_TOP_PADDING = (() => {
-  try {
-    const sysInfo = Taro.getSystemInfoSync()
-    const statusBarH = sysInfo.statusBarHeight || 0
-    const capsuleHeight = 40
-    return statusBarH + capsuleHeight + 8
-  } catch { return 60 }
-})()
 
-const IndexPage = () => {
+/** 工作流模式 */
+const MODE_OPTIONS = [
+  { key: 'pre-chat', label: '聊前准备', icon: '📋' },
+  { key: 'mid-chat', label: '聊中回复', icon: '💬' },
+  { key: 'post-chat', label: '聊后复盘', icon: '📝' },
+]
+
+export default function Index() {
+  // 工作流模式
+  const [chatMode, setChatMode] = useState<'pre-chat' | 'mid-chat' | 'post-chat'>('mid-chat')
+  // 输入
   const [message, setMessage] = useState('')
   const [context, setContext] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<AnalysisResult | null>(null)
-  const [fans, setFans] = useState<FanBrief[]>([])
-  const [selectedFanId, setSelectedFanId] = useState('')
-  const [showFanPicker, setShowFanPicker] = useState(false)
   const [imageUrl, setImageUrl] = useState('')
   const [imagePreview, setImagePreview] = useState('')
-  const [uploading, setUploading] = useState(false)
+  // 粉丝
+  const [fans, setFans] = useState<any[]>([])
+  const [selectedFanId, setSelectedFanId] = useState('')
+  // 人设
+  const [persona, setPersona] = useState('温柔陪伴')
+  // 状态
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<any>(null)
 
-  // 加载粉丝列表
-  useEffect(() => {
-    const fetchFans = async () => {
-      try {
-        const res = await Network.request({ url: '/api/fans' })
-        const data = res.data?.data
-        if (data) {
-          setFans(data.map((f: FanBrief) => ({ id: f.id, name: f.name, tags: f.tags, relationship_level: f.relationship_level })))
-        }
-      } catch (err) {
-        console.error('获取粉丝列表失败:', err)
-      }
-    }
-    fetchFans()
-  }, [])
+  useEffect(() => { loadFans() }, [])
 
-  // 从粉丝管理页返回时刷新列表
-  useEffect(() => {
-    const onShow = () => {
-      const fetchFans = async () => {
-        try {
-          const res = await Network.request({ url: '/api/fans' })
-          const data = res.data?.data
-          if (data) {
-            setFans(data.map((f: FanBrief) => ({ id: f.id, name: f.name, tags: f.tags, relationship_level: f.relationship_level })))
-          }
-        } catch (err) {
-          console.error('刷新粉丝列表失败:', err)
-        }
-      }
-      fetchFans()
-    }
-    Taro.eventCenter.on('onShow', onShow)
-    return () => { Taro.eventCenter.off('onShow', onShow) }
-  }, [])
-
-  const selectedFan = fans.find(f => f.id === selectedFanId)
+  const loadFans = async () => {
+    try {
+      const res = await Network.request({ url: '/api/fans' })
+      setFans(res.data.data || [])
+    } catch (e) { console.error('加载粉丝失败', e) }
+  }
 
   const handleChooseImage = async () => {
     try {
-      const res = await Taro.chooseImage({
-        count: 1,
-        sizeType: ['compressed'],
-        sourceType: ['album', 'camera'],
-      })
+      const res = await Taro.chooseImage({ count: 1, sizeType: ['compressed'] })
       const tempPath = res.tempFilePaths[0]
       setImagePreview(tempPath)
-      setUploading(true)
-
-      const uploadRes = await Network.uploadFile({
-        url: '/api/upload-image',
-        filePath: tempPath,
-        name: 'file',
-      })
-      console.log('图片上传响应:', uploadRes.data)
-      const resData = typeof uploadRes.data === 'string' ? JSON.parse(uploadRes.data) : uploadRes.data
-      const data = resData?.data
-      if (data?.url) {
-        setImageUrl(data.url)
-        Taro.showToast({ title: '图片已上传', icon: 'success', duration: 1000 })
-      } else {
-        Taro.showToast({ title: '上传失败', icon: 'none' })
-        setImagePreview('')
-      }
-    } catch (err) {
-      console.error('选择图片失败:', err)
-      setImagePreview('')
-    } finally {
-      setUploading(false)
+      const uploadRes = await Network.uploadFile({ url: '/api/upload-image', filePath: tempPath, name: 'file' })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (uploadRes as any).data.data
+      setImageUrl(data.url as string)
+      Taro.showToast({ title: '图片已上传', icon: 'success', duration: 1000 })
+    } catch (e) {
+      console.error('图片上传失败', e)
+      Taro.showToast({ title: '上传失败', icon: 'none' })
     }
   }
 
   const handleAnalyze = async () => {
-    const trimmed = message.trim()
-    if (!trimmed) {
-      Taro.showToast({ title: '请输入粉丝消息', icon: 'none' })
+    if (!message.trim() && chatMode !== 'pre-chat') {
+      Taro.showToast({ title: '请输入消息内容', icon: 'none' })
       return
     }
-
     setLoading(true)
     setResult(null)
-
     try {
+      const reqData: any = {
+        message: message.trim(),
+        chat_mode: chatMode,
+      }
+      if (context.trim()) reqData.context = `人设风格：${persona}。${context.trim()}`
+      else reqData.context = `人设风格：${persona}`
+      if (selectedFanId) reqData.fan_id = selectedFanId
+      if (imageUrl) reqData.image_url = imageUrl
+
       const res = await Network.request({
         url: '/api/analyze-message',
         method: 'POST',
-        data: {
-          message: trimmed,
-          context: context.trim(),
-          fan_id: selectedFanId || undefined,
-          image_url: imageUrl || undefined,
-        },
+        data: reqData,
       })
+      console.log('分析结果:', res.data)
+      const data = res.data.data?.data || res.data.data
+      setResult(data)
 
-      console.log('分析接口响应:', res.data)
-
-      const data = res.data?.data
-      if (data) {
-        setResult(data)
-
-        // 自动保存对话记录
-        if (selectedFanId) {
-          try {
-            await Network.request({
-              url: `/api/fans/${selectedFanId}/chat-logs`,
-              method: 'POST',
-              data: {
-                message: trimmed,
-                context: context.trim(),
-                analysis_result: data,
-              },
-            })
-            console.log('对话记录已自动保存')
-          } catch (err) {
-            console.error('保存对话记录失败:', err)
-          }
-        }
-      } else {
-        Taro.showToast({ title: '分析失败，请重试', icon: 'none' })
+      // 保存对话记录
+      if (selectedFanId && chatMode === 'mid-chat') {
+        try {
+          await Network.request({
+            url: `/api/fans/${selectedFanId}/chat-logs`,
+            method: 'POST',
+            data: {
+              message: message.trim(),
+              context: reqData.context,
+              chat_mode: chatMode,
+              analysis_result: JSON.stringify(data).substring(0, 500),
+            },
+          })
+        } catch (e) { console.error('保存记录失败', e) }
       }
-    } catch (err) {
-      console.error('分析请求失败:', err)
-      Taro.showToast({ title: '网络错误，请重试', icon: 'none' })
+    } catch (e) {
+      console.error('分析失败', e)
+      Taro.showToast({ title: '分析失败', icon: 'none' })
     } finally {
       setLoading(false)
     }
   }
 
-  const handleCopy = (text: string) => {
-    Taro.setClipboardData({ data: text })
-  }
+  const goFans = () => Taro.navigateTo({ url: '/pages/fans/index' })
 
   return (
-    <View className="flex flex-col min-h-screen" style={{ backgroundColor: '#F8EDEB' }}>
-      {/* Header - 便签式标题区 */}
-      <View
-        className="px-5 pb-3"
-        style={{ paddingTop: `${HEADER_TOP_PADDING}px` }}
-      >
-        <View className="flex flex-row items-center justify-between">
-          <View className="flex flex-row items-center gap-2">
-            <BookHeart size={22} color="#A85D6A" />
-            <Text className="block text-2xl font-bold" style={{ color: '#2F2523' }}>回复小助手</Text>
-          </View>
-          <View
-            className="flex flex-row items-center gap-1 px-3 py-1 rounded-full"
-            style={{ backgroundColor: '#FDE2E4' }}
-            onClick={() => Taro.navigateTo({ url: '/pages/fans/index' })}
-          >
-            <Users size={13} color="#D98C9A" />
-            <Text className="text-xs font-bold" style={{ color: '#D98C9A' }}>粉丝</Text>
-          </View>
+    <View className="min-h-screen" style={{ backgroundColor: '#F8EDEB' }}>
+      {/* Header */}
+      <View style={{ paddingTop: HEADER_TOP, paddingLeft: 16, paddingRight: 16, paddingBottom: 8, display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <BookHeart size={22} color="#A85D6A" />
+          <Text className="block text-2xl font-bold" style={{ color: '#2F2523' }}>回复小助手</Text>
         </View>
-        <Text className="block text-xs mt-1" style={{ color: '#7A8061' }}>帮你拿捏分寸，轻松回复粉丝消息</Text>
+        <View onClick={goFans} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#E8C9C4' }}>
+          <Users size={14} color="#A85D6A" />
+          <Text className="block text-xs" style={{ color: '#A85D6A' }}>粉丝</Text>
+        </View>
       </View>
 
-      {/* Scrollable Content */}
-      <View className="flex-1 overflow-y-auto pb-8">
-
-        {/* ===== 粉丝选择 - 便签标签 ===== */}
-        <View className="px-5 pt-1 pb-2">
+      {/* 工作流模式切换 */}
+      <View style={{ paddingLeft: 16, paddingRight: 16, marginBottom: 8, display: 'flex', flexDirection: 'row', gap: 6 }}>
+        {MODE_OPTIONS.map(m => (
           <View
-            className="flex flex-row items-center justify-between rounded-2xl px-3 py-2"
-            style={{ backgroundColor: '#FFF7F2', border: '1px dashed #E8C9C4' }}
-            onClick={() => setShowFanPicker(!showFanPicker)}
+            key={m.key}
+            onClick={() => { setChatMode(m.key as any); setResult(null) }}
+            style={{
+              flex: 1, paddingTop: 6, paddingBottom: 6, borderRadius: 12,
+              backgroundColor: chatMode === m.key ? '#D98C9A' : '#FFFFFF',
+              display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4,
+              borderWidth: 1, borderColor: chatMode === m.key ? '#D98C9A' : '#E8C9C4',
+            }}
           >
-            <View className="flex flex-row items-center gap-2">
-              <StickyNote size={13} color="#D98C9A" />
-              {selectedFan ? (
-                <View className="flex flex-row items-center gap-2">
-                  <Text className="block text-xs font-bold" style={{ color: '#2F2523' }}>{selectedFan.name}</Text>
-                  <View
-                    className="inline-flex items-center px-2 py-0 rounded-full"
-                    style={{ backgroundColor: (LEVEL_STYLE[selectedFan.relationship_level] || LEVEL_STYLE['普通']).bg }}
-                  >
-                    <Text className="text-xs font-bold" style={{ color: (LEVEL_STYLE[selectedFan.relationship_level] || LEVEL_STYLE['普通']).color }}>
-                      {selectedFan.relationship_level}
-                    </Text>
+            <Text className="block text-sm">{m.icon}</Text>
+            <Text className="block text-xs font-medium" style={{ color: chatMode === m.key ? '#FFFFFF' : '#2F2523' }}>{m.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* 输入区 */}
+      <View style={{ marginLeft: 12, marginRight: 12, marginBottom: 8, padding: 12, borderRadius: 16, backgroundColor: '#FDE2E4' }}>
+        {/* 粉丝选择 */}
+        <View style={{ marginBottom: 8 }}>
+          <Text className="block text-xs mb-1" style={{ color: '#7A8061' }}>选择粉丝</Text>
+          <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+            <View
+              onClick={() => setSelectedFanId('')}
+              style={{ padding: '3px 10px', borderRadius: 12, borderWidth: 1, borderColor: selectedFanId ? '#E8C9C4' : '#D98C9A', backgroundColor: selectedFanId ? '#FFFFFF' : '#D98C9A' }}
+            >
+              <Text className="block text-xs" style={{ color: selectedFanId ? '#2F2523' : '#FFFFFF' }}>未选择</Text>
+            </View>
+            {fans.map((f: any) => (
+              <View
+                key={f.id}
+                onClick={() => setSelectedFanId(f.id)}
+                style={{ padding: '3px 10px', borderRadius: 12, borderWidth: 1, borderColor: selectedFanId === f.id ? '#D98C9A' : '#E8C9C4', backgroundColor: selectedFanId === f.id ? '#D98C9A' : '#FFFFFF' }}
+              >
+                <Text className="block text-xs" style={{ color: selectedFanId === f.id ? '#FFFFFF' : '#2F2523' }}>{f.name}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* 人设选择 */}
+        <View style={{ marginBottom: 8 }}>
+          <Text className="block text-xs mb-1" style={{ color: '#7A8061' }}>人设风格</Text>
+          <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+            {PERSONA_OPTIONS.map(p => (
+              <View
+                key={p.key}
+                onClick={() => setPersona(p.key)}
+                style={{ padding: '3px 8px', borderRadius: 12, borderWidth: 1, borderColor: persona === p.key ? '#D98C9A' : '#E8C9C4', backgroundColor: persona === p.key ? '#D98C9A' : '#FFFFFF' }}
+              >
+                <Text className="block text-xs" style={{ color: persona === p.key ? '#FFFFFF' : '#2F2523' }}>{p.emoji} {p.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* 消息输入 */}
+        <View style={{ marginBottom: 6 }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 12, padding: '8px 12px' }}>
+            <Input
+              style={{ width: '100%', fontSize: '14px' }}
+              placeholder={chatMode === 'pre-chat' ? '聊前准备不需要输入消息...' : chatMode === 'post-chat' ? '粘贴本轮聊天内容...' : '粘贴粉丝发来的消息...'}
+              value={message}
+              onInput={(e: any) => setMessage(e.detail.value)}
+            />
+          </View>
+        </View>
+
+        {/* 补充背景 */}
+        <View style={{ marginBottom: 6 }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 12, padding: '8px 12px' }}>
+            <Input
+              style={{ width: '100%', fontSize: '13px' }}
+              placeholder="补充背景（可选）"
+              value={context}
+              onInput={(e: any) => setContext(e.detail.value)}
+            />
+          </View>
+        </View>
+
+        {/* 图片上传 */}
+        {chatMode === 'mid-chat' && (
+          <View style={{ marginBottom: 6 }}>
+            {imagePreview ? (
+              <View style={{ position: 'relative', width: 64, height: 64 }}>
+                <Image src={imagePreview} style={{ width: 64, height: 64, borderRadius: 8 }} mode="aspectFill" />
+                <View onClick={() => { setImageUrl(''); setImagePreview('') }} style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: 9, backgroundColor: '#C77763', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <X size={10} color="#FFFFFF" />
+                </View>
+              </View>
+            ) : (
+              <View onClick={handleChooseImage} style={{ width: 64, height: 64, borderRadius: 8, borderWidth: 1, borderColor: '#E8C9C4', borderStyle: 'dashed', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+                <ImagePlus size={20} color="#D98C9A" />
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* 分析按钮 */}
+        <View
+          onClick={handleAnalyze}
+          style={{
+            backgroundColor: loading ? '#E8C9C4' : '#A85D6A',
+            borderRadius: 12, paddingTop: 8, paddingBottom: 8,
+            display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4,
+          }}
+        >
+          {loading ? (
+            <Text className="block text-sm text-white">正在生成...</Text>
+          ) : (
+            <>
+              <Sparkles size={14} color="#FFFFFF" />
+              <Text className="block text-sm text-white font-medium">
+                {chatMode === 'pre-chat' ? '生成聊前准备' : chatMode === 'post-chat' ? '生成聊后复盘' : '帮我想想怎么回'}
+              </Text>
+            </>
+          )}
+        </View>
+      </View>
+
+      {/* 结果区 */}
+      {result && (
+        <View style={{ marginLeft: 12, marginRight: 12, marginBottom: 12 }}>
+          {/* === 聊前准备 === */}
+          {chatMode === 'pre-chat' && (
+            <View style={{ borderRadius: 16, backgroundColor: '#FFFFFF', padding: 12, borderWidth: 1, borderColor: '#E8C9C4' }}>
+              {/* 关系阶段 + 目标 */}
+              <View style={{ display: 'flex', flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+                <View style={{ padding: '3px 8px', borderRadius: 8, backgroundColor: '#FDE2E4' }}>
+                  <Text className="block text-xs font-medium" style={{ color: '#A85D6A' }}>{result.relationshipStage || '普通互动'}</Text>
+                </View>
+                <View style={{ padding: '3px 8px', borderRadius: 8, backgroundColor: '#FFF1DE' }}>
+                  <Text className="block text-xs" style={{ color: '#C77763' }}>{result.dailyGoal || ''}</Text>
+                </View>
+              </View>
+
+              {/* 开场白 */}
+              {result.openers && result.openers.length > 0 && (
+                <View style={{ marginBottom: 8 }}>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#2F2523' }}>💡 开场白建议</Text>
+                  {result.openers.map((o: string, i: number) => (
+                    <View key={i} style={{ padding: '4px 8px', borderRadius: 8, backgroundColor: '#FFF7F2', marginBottom: 4 }}>
+                      <Text className="block text-xs" style={{ color: '#2F2523' }}>{o}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* 前5句破冰 */}
+              {result.iceBreaker && (
+                <View style={{ marginBottom: 8 }}>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#2F2523' }}>🔥 前5句破冰</Text>
+                  {Object.entries(result.iceBreaker).map(([k, v]) => (
+                    <View key={k} style={{ display: 'flex', flexDirection: 'row', gap: 4, marginBottom: 3, alignItems: 'flex-start' }}>
+                      <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: '#D98C9A', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 }}>
+                        <Text className="block text-white" style={{ fontSize: 9, lineHeight: '16px' }}>{k}</Text>
+                      </View>
+                      <Text className="block text-xs" style={{ color: '#2F2523', flex: 1 }}>{v as string}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* 注意事项 */}
+              {result.precautions && result.precautions.length > 0 && (
+                <View>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#C77763' }}>⚠️ 注意</Text>
+                  {result.precautions.map((p: string, i: number) => (
+                    <Text key={i} className="block text-xs" style={{ color: '#7A8061' }}>• {p}</Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* === 聊中回复 === */}
+          {chatMode === 'mid-chat' && (
+            <View style={{ borderRadius: 16, backgroundColor: '#FFFFFF', padding: 12, borderWidth: 1, borderColor: '#E8C9C4' }}>
+              {/* 类型+情绪+关系阶段 */}
+              <View style={{ display: 'flex', flexDirection: 'row', gap: 4, flexWrap: 'wrap', marginBottom: 6 }}>
+                {result.messageType && (
+                  <View style={{ padding: '2px 8px', borderRadius: 8, backgroundColor: '#FDE2E4' }}>
+                    <Text className="block text-xs font-medium" style={{ color: '#A85D6A' }}>{result.messageType}</Text>
+                  </View>
+                )}
+                {result.emotion && (
+                  <View style={{ padding: '2px 8px', borderRadius: 8, backgroundColor: '#FFF1DE' }}>
+                    <Text className="block text-xs" style={{ color: '#C77763' }}>{result.emotion}</Text>
+                  </View>
+                )}
+                {result.relationshipStage && (
+                  <View style={{ padding: '2px 8px', borderRadius: 8, backgroundColor: '#FFF7F2' }}>
+                    <Text className="block text-xs" style={{ color: '#7A8061' }}>{result.relationshipStage}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* 风险提醒 */}
+              {result.riskWarning && (
+                <View style={{ borderLeftWidth: 3, borderLeftColor: '#C77763', paddingLeft: 8, marginBottom: 6, backgroundColor: '#FFF7F2', borderRadius: 4, paddingTop: 4, paddingBottom: 4}}>
+                  <Text className="block text-xs" style={{ color: '#C77763' }}>⚠️ {result.riskWarning}</Text>
+                </View>
+              )}
+
+              {/* 回复策略 */}
+              {result.replyStrategy && (
+                <View style={{ marginBottom: 6, padding: '4px 8px', borderRadius: 8, backgroundColor: '#FFF1DE' }}>
+                  <Text className="block text-xs" style={{ color: '#C77763' }}>🎯 {result.replyStrategy}</Text>
+                </View>
+              )}
+
+              {/* 三版回复 */}
+              <View style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+                {[
+                  { label: '温柔撒娇', value: result.gentleReply, color: '#FDE2E4', border: '#D98C9A' },
+                  { label: '轻松暧昧', value: result.casualReply, color: '#FFF1DE', border: '#C77763' },
+                  { label: '甜而不腻', value: result.sweetReply, color: '#FFF7F2', border: '#7A8061' },
+                ].map(r => r.value && (
+                  <View key={r.label} style={{ borderLeftWidth: 3, borderLeftColor: r.border, paddingLeft: 8, borderRadius: 4, backgroundColor: r.color, paddingTop: 4, paddingBottom: 4}}>
+                    <Text className="block text-xs font-medium mb-1" style={{ color: '#2F2523' }}>{r.label}</Text>
+                    <Text className="block text-xs" style={{ color: '#2F2523' }}>{r.value}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* 前5句破冰 */}
+              {result.iceBreaker && (
+                <View style={{ marginBottom: 6 }}>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#2F2523' }}>🔥 前5句破冰</Text>
+                  <View style={{ display: 'flex', flexDirection: 'row', gap: 3, flexWrap: 'wrap' }}>
+                    {Object.entries(result.iceBreaker).map(([k, v]) => (
+                      <View key={k} style={{ padding: '3px 8px', borderRadius: 10, backgroundColor: '#FDE2E4' }}>
+                        <Text className="block text-xs" style={{ color: '#A85D6A' }}>{k}. {v as string}</Text>
+                      </View>
+                    ))}
                   </View>
                 </View>
-              ) : (
-                <Text className="block text-xs" style={{ color: '#7A8061' }}>选择粉丝（可选，带入记忆）</Text>
               )}
-            </View>
-            <View className="flex flex-row items-center gap-1">
-              {selectedFanId && (
-                <View onClick={(e) => { e.stopPropagation && e.stopPropagation(); setSelectedFanId(''); setShowFanPicker(false) }}>
-                  <X size={13} color="#999" />
-                </View>
-              )}
-              <ChevronDown size={13} color="#999" />
-            </View>
-          </View>
 
-          {/* 粉丝选择下拉 - 便签列表 */}
-          {showFanPicker && (
-            <View className="rounded-2xl mt-1 overflow-hidden" style={{ backgroundColor: '#FFF7F2', border: '1px dashed #E8C9C4' }}>
-              {fans.length === 0 ? (
-                <View className="px-4 py-3">
-                  <Text className="block text-xs" style={{ color: '#7A8061' }}>暂无粉丝档案，点击右上角添加</Text>
+              {/* 不建议发送 */}
+              {result.badReply && (
+                <View style={{ borderLeftWidth: 3, borderLeftColor: '#C77763', paddingLeft: 8, marginBottom: 6, backgroundColor: '#FFF7F2', borderRadius: 4, paddingTop: 4, paddingBottom: 4}}>
+                  <Text className="block text-xs line-through" style={{ color: '#7A8061' }}>✗ {result.badReply}</Text>
+                  {result.badReason && <Text className="block text-xs mt-1" style={{ color: '#C77763' }}>原因：{result.badReason}</Text>}
                 </View>
-              ) : (
-                fans.map((fan) => {
-                  const isSelected = selectedFanId === fan.id
-                  const levelS = LEVEL_STYLE[fan.relationship_level] || LEVEL_STYLE['普通']
-                  return (
-                    <View
-                      key={fan.id}
-                      className="flex flex-row items-center gap-2 px-4 py-2"
-                      style={{ backgroundColor: isSelected ? '#FDE2E4' : 'transparent' }}
-                      onClick={() => { setSelectedFanId(isSelected ? '' : fan.id); setShowFanPicker(false) }}
-                    >
-                      <View className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: levelS.bg }}>
-                        <Text className="text-xs font-bold" style={{ color: levelS.color }}>{fan.name.charAt(0)}</Text>
-                      </View>
-                      <Text className="block text-xs font-bold flex-1" style={{ color: '#2F2523' }}>{fan.name}</Text>
-                      <View className="inline-flex items-center px-2 py-0 rounded-full" style={{ backgroundColor: levelS.bg }}>
-                        <Text className="text-xs" style={{ color: levelS.color }}>{fan.relationship_level}</Text>
-                      </View>
+              )}
+
+              {/* 复盘+档案建议 */}
+              {(result.postChatReview || result.fanProfileUpdate) && (
+                <View style={{ borderTopWidth: 1, borderTopColor: '#E8C9C4', paddingTop: 6, marginTop: 4 }}>
+                  {result.postChatReview && (
+                    <View style={{ marginBottom: 4 }}>
+                      <Text className="block text-xs font-medium" style={{ color: '#7A8061' }}>📋 复盘方向</Text>
+                      <Text className="block text-xs" style={{ color: '#2F2523' }}>{result.postChatReview}</Text>
                     </View>
-                  )
-                })
+                  )}
+                  {result.fanProfileUpdate && (
+                    <View>
+                      <Text className="block text-xs font-medium" style={{ color: '#7A8061' }}>📝 档案更新</Text>
+                      <Text className="block text-xs" style={{ color: '#2F2523' }}>{result.fanProfileUpdate}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* === 聊后复盘 === */}
+          {chatMode === 'post-chat' && (
+            <View style={{ borderRadius: 16, backgroundColor: '#FFFFFF', padding: 12, borderWidth: 1, borderColor: '#E8C9C4' }}>
+              {/* 总结 */}
+              {result.chatSummary && (
+                <View style={{ marginBottom: 8, padding: '6px 10px', borderRadius: 10, backgroundColor: '#FDE2E4' }}>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#A85D6A' }}>💬 本轮总结</Text>
+                  <Text className="block text-xs" style={{ color: '#2F2523' }}>{result.chatSummary}</Text>
+                </View>
+              )}
+
+              {/* 情绪+关系变化 */}
+              <View style={{ display: 'flex', flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+                {result.emotionChange && (
+                  <View style={{ padding: '3px 8px', borderRadius: 8, backgroundColor: '#FFF1DE' }}>
+                    <Text className="block text-xs" style={{ color: '#C77763' }}>情绪：{result.emotionChange}</Text>
+                  </View>
+                )}
+                {result.relationshipChange && (
+                  <View style={{ padding: '3px 8px', borderRadius: 8, backgroundColor: '#FFF7F2' }}>
+                    <Text className="block text-xs" style={{ color: '#7A8061' }}>关系：{result.relationshipChange}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* 档案更新建议 */}
+              {result.profileUpdateSuggestions && (
+                <View style={{ marginBottom: 8, borderLeftWidth: 3, borderLeftColor: '#D98C9A', paddingLeft: 8 }}>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#A85D6A' }}>📝 档案更新建议</Text>
+                  {Object.entries(result.profileUpdateSuggestions as Record<string, string>).map(([k, v]) => v && (
+                    <Text key={k} className="block text-xs" style={{ color: '#2F2523' }}>• {k}：{v as string}</Text>
+                  ))}
+                </View>
+              )}
+
+              {/* 下次开场 */}
+              {result.nextOpeners && result.nextOpeners.length > 0 && (
+                <View style={{ marginBottom: 8 }}>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#2F2523' }}>💡 下次开场建议</Text>
+                  {result.nextOpeners.map((o: string, i: number) => (
+                    <View key={i} style={{ padding: '4px 8px', borderRadius: 8, backgroundColor: '#FFF7F2', marginBottom: 3 }}>
+                      <Text className="block text-xs" style={{ color: '#2F2523' }}>{o}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* 维护建议 */}
+              {result.maintenanceAdvice && (
+                <View style={{ padding: '6px 10px', borderRadius: 10, backgroundColor: '#FFF1DE' }}>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#C77763' }}>🎯 维护建议</Text>
+                  <Text className="block text-xs" style={{ color: '#2F2523' }}>{result.maintenanceAdvice}</Text>
+                </View>
               )}
             </View>
           )}
         </View>
+      )}
 
-        {/* ===== 消息输入区 - 浅粉便签 ===== */}
-        <View className="px-5 pt-1 pb-3">
-          <View
-            className="rounded-2xl p-4"
-            style={{ backgroundColor: '#FDE2E4' }}
-          >
-            <View className="flex flex-row items-center gap-1 mb-2">
-              <MessageCircleHeart size={13} color="#A85D6A" />
-              <Text className="block text-xs font-bold" style={{ color: '#A85D6A' }}>粉丝发来的消息</Text>
+      {/* 底部原则 */}
+      <View style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: 20 }}>
+        <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 4, justifyContent: 'center' }}>
+          {['可撒娇可暧昧', '人设内亲密', '不承诺现实', '不PUA不卖惨', '轻松引导互动'].map(t => (
+            <View key={t} style={{ padding: '2px 8px', borderRadius: 10, borderWidth: 1, borderColor: '#E8C9C4', borderStyle: 'dashed' }}>
+              <Text className="block text-xs" style={{ color: '#7A8061' }}>{t}</Text>
             </View>
-
-            {/* 主输入框 */}
-            <View
-              className="rounded-xl px-3 py-2 mb-2"
-              style={{ backgroundColor: '#ffffff' }}
-            >
-              <Input
-                className="border-none bg-transparent p-0 shadow-none ring-0 focus-within:ring-0 focus-within:border-none rounded-none"
-                style={{ fontSize: '14px', width: '100%' }}
-                placeholder="粘贴粉丝发来的微信消息..."
-                placeholderClass="text-gray-400"
-                value={message}
-                onInput={(e) => setMessage(e.detail.value)}
-                maxlength={500}
-              />
-            </View>
-
-            {/* 补充背景 */}
-            <View
-              className="rounded-xl px-3 py-2 mb-2"
-              style={{ backgroundColor: '#FFF7F2' }}
-            >
-              <Input
-                className="border-none bg-transparent p-0 shadow-none ring-0 focus-within:ring-0 focus-within:border-none rounded-none"
-                style={{ fontSize: '12px', width: '100%' }}
-                placeholder="补充粉丝背景（可选）"
-                placeholderClass="text-gray-400"
-                value={context}
-                onInput={(e) => setContext(e.detail.value)}
-                maxlength={200}
-              />
-            </View>
-
-            {/* 图片上传 - 便签式 */}
-            <View className="mb-3">
-              {imagePreview ? (
-                <View className="relative rounded-xl overflow-hidden" style={{ backgroundColor: '#FFF7F2' }}>
-                  <View className="flex flex-row items-center gap-2 p-2">
-                    <View className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
-                      <Image src={imagePreview} className="w-full h-full" mode="aspectFill" />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="block text-xs font-bold" style={{ color: '#2F2523' }}>已添加截图</Text>
-                      <Text className="block text-xs" style={{ color: '#7A8061' }}>{uploading ? '上传中...' : 'AI 会识别图片内容'}</Text>
-                    </View>
-                    <View
-                      className="w-6 h-6 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: '#FDE2E4' }}
-                      onClick={() => { setImagePreview(''); setImageUrl('') }}
-                    >
-                      <X size={12} color="#D98C9A" />
-                    </View>
-                  </View>
-                </View>
-              ) : (
-                <View
-                  className="flex flex-row items-center justify-center gap-2 rounded-xl py-2"
-                  style={{ backgroundColor: '#FFF7F2', border: '1px dashed #E8C9C4' }}
-                  onClick={handleChooseImage}
-                >
-                  <ImagePlus size={14} color="#D98C9A" />
-                  <Text className="block text-xs" style={{ color: '#D98C9A' }}>上传聊天截图（可选）</Text>
-                </View>
-              )}
-            </View>
-
-            {/* 分析按钮 - 印章风格 */}
-            <View
-              className="flex flex-row items-center justify-center gap-2 rounded-xl py-2"
-              style={{
-                backgroundColor: loading ? '#D98C9A' : '#A85D6A',
-                opacity: loading ? 0.8 : 1,
-              }}
-              onClick={handleAnalyze}
-            >
-              {loading ? (
-                <Loader size={14} color="#ffffff" className="animate-spin" />
-              ) : (
-                <Sparkles size={14} color="#ffffff" />
-              )}
-              <Text style={{ color: '#ffffff', fontSize: '14px', fontWeight: 700 }}>
-                {loading ? '分析中...' : '帮我想想怎么回'}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* ===== 分析结果 - 手作卡片组 ===== */}
-        {result && (
-          <View className="px-5 pb-4">
-            {/* 消息类型 + 情绪 - 小标签 */}
-            <View className="flex flex-row items-center gap-2 mb-2 flex-wrap">
-              <Stamp size={12} color="#A85D6A" />
-              <View
-                className="inline-flex items-center px-2 py-0 rounded-full"
-                style={{ backgroundColor: getTypeStyle(result.messageType).bg }}
-              >
-                <Text className="text-xs font-bold" style={{ color: getTypeStyle(result.messageType).color }}>
-                  {result.messageType}
-                </Text>
-              </View>
-              <View className="h-3 w-px" style={{ backgroundColor: '#E8C9C4' }} />
-              <HeartPulse size={12} color="#C77763" />
-              <Text className="block text-xs" style={{ color: '#2F2523' }}>{result.emotion}</Text>
-            </View>
-
-            {/* 注意事项 - 陶土色小条 */}
-            {result.warnings && result.warnings.length > 0 && (
-              <View
-                className="rounded-xl px-3 py-2 mb-2"
-                style={{ backgroundColor: '#FFF1DE', borderLeft: '3px solid #C77763' }}
-              >
-                <View className="flex flex-row items-center gap-1 mb-1">
-                  <ShieldAlert size={11} color="#C77763" />
-                  <Text className="block text-xs font-bold" style={{ color: '#C77763' }}>注意</Text>
-                </View>
-                <View className="flex flex-col gap-1">
-                  {result.warnings.map((w, i) => (
-                    <View key={i} className="flex flex-row items-start gap-1">
-                      <View className="w-1 h-1 rounded-full mt-2 shrink-0" style={{ backgroundColor: '#C77763' }} />
-                      <Text className="block text-xs leading-snug" style={{ color: '#2F2523' }}>
-                        <Text className="font-bold" style={{ color: '#C77763' }}>{w.label}</Text> → {w.detail}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* 回复建议 - 三张手作便签卡片 */}
-            <View className="flex flex-row items-center gap-1 mb-2">
-              <PenTool size={12} color="#A85D6A" />
-              <Text className="block text-xs font-bold" style={{ color: '#A85D6A' }}>回复建议</Text>
-              <Text className="block text-xs" style={{ color: '#7A8061' }}>· 点击复制</Text>
-            </View>
-
-            {/* 温柔安抚 - 浅粉卡片 */}
-            <View
-              className="rounded-2xl px-3 py-2 mb-2"
-              style={{ backgroundColor: '#ffffff', borderLeft: '3px solid #D98C9A' }}
-              onClick={() => handleCopy(result.gentleReply)}
-            >
-              <View className="flex flex-row items-center gap-1 mb-1">
-                <MessageCircleHeart size={11} color="#D98C9A" />
-                <Text className="block text-xs font-bold" style={{ color: '#D98C9A' }}>温柔撒娇</Text>
-              </View>
-              <Text className="block text-xs leading-snug" style={{ color: '#2F2523' }}>{result.gentleReply}</Text>
-            </View>
-
-            {/* 轻松互动 - 奶油卡片 */}
-            <View
-              className="rounded-2xl px-3 py-2 mb-2"
-              style={{ backgroundColor: '#ffffff', borderLeft: '3px solid #C77763' }}
-              onClick={() => handleCopy(result.casualReply)}
-            >
-              <View className="flex flex-row items-center gap-1 mb-1">
-                <Smile size={11} color="#C77763" />
-                <Text className="block text-xs font-bold" style={{ color: '#C77763' }}>轻松暧昧</Text>
-              </View>
-              <Text className="block text-xs leading-snug" style={{ color: '#2F2523' }}>{result.casualReply}</Text>
-            </View>
-
-            {/* 边界清晰 - 橄榄灰卡片 */}
-            <View
-              className="rounded-2xl px-3 py-2 mb-2"
-              style={{ backgroundColor: '#ffffff', borderLeft: '3px solid #7A8061' }}
-              onClick={() => handleCopy(result.boundaryReply)}
-            >
-              <View className="flex flex-row items-center gap-1 mb-1">
-                <ShieldCheck size={11} color="#7A8061" />
-                <Text className="block text-xs font-bold" style={{ color: '#7A8061' }}>甜而不腻</Text>
-              </View>
-              <Text className="block text-xs leading-snug" style={{ color: '#2F2523' }}>{result.boundaryReply}</Text>
-            </View>
-
-            {/* 避雷提醒 - 陶土色印章 */}
-            <View
-              className="rounded-2xl px-3 py-2"
-              style={{ backgroundColor: '#FFF5F0', borderLeft: '3px solid #B55A5A' }}
-            >
-              <View className="flex flex-row items-center gap-1 mb-1">
-                <TriangleAlert size={11} color="#B55A5A" />
-                <Text className="block text-xs font-bold" style={{ color: '#B55A5A' }}>避雷提醒</Text>
-              </View>
-              <View className="rounded-lg px-2 py-1 mb-1" style={{ backgroundColor: '#FDE8E8' }}>
-                <Text className="block text-xs line-through" style={{ color: '#2F2523', textDecorationColor: '#B55A5A' }}>
-                  {result.badReply}
-                </Text>
-              </View>
-              <View className="flex flex-row items-start gap-1">
-                <Ban size={10} color="#C77763" />
-                <Text className="block text-xs leading-snug" style={{ color: '#C77763' }}>{result.badReason}</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* 底部原则 - 手写标签式 */}
-        <View className="px-5 pb-6">
-          <View className="flex flex-row items-center gap-1 mb-2">
-            <BookHeart size={12} color="#7A8061" />
-            <Text className="block text-xs" style={{ color: '#7A8061' }}>核心原则</Text>
-          </View>
-          <View className="flex flex-row flex-wrap gap-1">
-            {PRINCIPLES.map((p, i) => (
-              <View
-                key={i}
-                className="inline-flex items-center px-2 py-1 rounded-full"
-                style={{ backgroundColor: '#FFF7F2', border: '1px dashed #E8C9C4' }}
-              >
-                <Text className="text-xs" style={{ color: '#2F2523' }}>{p}</Text>
-              </View>
-            ))}
-          </View>
+          ))}
         </View>
       </View>
     </View>
   )
 }
-
-export default IndexPage

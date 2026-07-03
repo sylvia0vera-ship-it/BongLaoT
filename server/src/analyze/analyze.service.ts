@@ -1,277 +1,496 @@
 import { Injectable } from '@nestjs/common'
-import { LLMClient, Config, HeaderUtils, Message } from 'coze-coding-dev-sdk'
-import { createClient } from '@supabase/supabase-js'
-import * as dotenv from 'dotenv'
+import { LLMClient, Config } from 'coze-coding-dev-sdk'
+import { getSupabaseClient } from '../storage/database/supabase-client'
+import * as https from 'https'
+import * as http from 'http'
 
-dotenv.config()
-
-function getSupabaseClient() {
-  const url = process.env.SUPABASE_URL || ''
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-  if (!url || !key) return null
-  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-}
-
-export interface AnalysisResult {
-  messageType: string
-  emotion: string
-  warnings: { label: string; detail: string }[]
-  gentleReply: string
-  casualReply: string
-  boundaryReply: string
-  badReply: string
-  badReason: string
-}
-
-const REFERENCE_CASES = `
-【参考案例库】以下是经过标注的典型粉丝消息场景，请优先匹配最相似的场景，并参考"回复重点"生成回复：
-
-1. 抱怨回复慢
-   - 粉丝消息："你怎么这么久才回我消息？我等了好久" / 背景：大R粉丝，月消费5k+ / 回复重点：表达不是故意忽略，不承诺秒回
-   - 粉丝消息："每次给你发消息都要等半天" / 背景：普通粉丝，偶尔打赏 / 回复重点：简短安抚，不制造特殊感
-
-2. 消费后求关注
-   - 粉丝消息："今天给你刷了那么多，你都不跟我说说话" / 背景：大R粉丝，月消费1w+ / 回复重点：感谢支持但不暗示特殊关系
-   - 粉丝消息："我给你送了礼物你怎么都不回我" / 背景：小R粉丝，首次打赏 / 回复重点：温和感谢，不承诺专属回报
-
-3. 上线安排询问
-   - 粉丝消息："今天几点上线？我等你" / 背景：忠实粉丝，每天来看 / 回复重点：给出时间或不确定时诚实回答，不暗示"专门为你"
-   - 粉丝消息："你明天还在吗？不在的话我就不等了" / 背景：普通粉丝，偶尔来看 / 回复重点：轻松回复，不因对方威胁式语气而妥协
-
-4. 情绪低落
-   - 粉丝消息："今天好累，感觉什么都不想做" / 背景：普通粉丝，偶尔互动 / 回复重点：轻量关怀，不做心理辅导，不承诺陪伴
-   - 粉丝消息："感觉最近压力好大，能不能陪我聊聊" / 背景：大R粉丝，月消费5k+ / 回复重点：温暖回应但不做长期情感支撑
-
-5. 暧昧试探
-   - 粉丝消息："你有没有想我啊" / 背景：男粉丝，经常打赏 / 回复重点：轻松化解，不回应暧昧，不给错觉
-   - 粉丝消息："如果我在你身边就好了" / 背景：新粉丝，开始频繁互动 / 回复重点：礼貌转移话题，不接暧昧暗示
-
-6. 边界试探
-   - 粉丝消息："我们能不能线下见一面" / 背景：大R粉丝，月消费1w+ / 回复重点：明确拒绝，不模糊，不解释太多
-   - 粉丝消息："你能给我你的私人微信吗" / 背景：普通粉丝，频繁互动 / 回复重点：委婉但坚定拒绝，不道歉
-
-7. 普通互动
-   - 粉丝消息："你今天好好看" / 背景：普通粉丝 / 回复重点：简短感谢，自然回应，不过度热情
-   - 粉丝消息："哈哈你说的那个段子太搞笑了" / 背景：老粉丝 / 回复重点：轻松互动，可以适当幽默
-
-8. 冷场唤回
-   - 粉丝消息："在吗？好久没聊天了" / 背景：曾经活跃的粉丝 / 回复重点：简短回应，不过度热情，不追问为何消失
-   - 粉丝消息："最近怎么都没看到你" / 背景：偶尔来的粉丝 / 回复重点：简单解释近况，不渲染思念
-
-9. 轻微不满
-   - 粉丝消息："你都不看我的消息" / 背景：普通粉丝 / 回复重点：不承认也不否认，轻松带过
-   - 粉丝消息："感觉你现在都不怎么跟大家互动了" / 背景：老粉丝 / 回复重点：简短回应，不解释过多，不承诺改变
-`
-
-const SYSTEM_PROMPT = `你是一个直播私域关系维护 AI 助手。
-
-使用者身份：兼职主播、主播运营、直播运营助理、私域运营人员。
-
-你的任务：
-根据用户发来的微信消息，判断消息类型、用户情绪、关系风险，并生成自然、有分寸、可修改的微信回复建议。
-
-回复原则：
-1. 你可以根据主播设定生成不同程度的恋爱感、暧昧感、撒娇感回复
-2. 可以表达"想你""在意你""你对我很特别""看到你来我会开心"等人设内亲密表达
-3. 可以营造粉丝被重视、被偏爱、被记住的感觉
-4. 如果用户要求强恋爱感回复，可以生成女友感、暧昧拉扯感、轻微吃醋感的话术
-5. 所有亲密表达默认属于陪伴场景下的人设互动，不代表现实恋爱承诺
-6. 不承诺线下见面、现实恋爱关系、私下陪伴绑定、金钱回报或唯一关系
-7. 不使用威胁、羞辱、冷暴力、PUA、卖惨或欺骗方式诱导用户付费
-8. 可以自然引导用户继续互动、来看我、送礼支持，但语气要轻松，不强迫
-9. 回复要像微信聊天，短句、自然、有情绪价值
-10. 每条回复控制在30-60字
-11. 所有回复都只是建议，使用者可以自行修改后发送
-12. 优先参考案例库中的同类场景的回复重点来生成回复
-
-【话术红线 - 必须遵守】：
-- 回复中**禁止出现"直播"二字**。这是私域微信聊天，提到"直播"会拉远距离感、增加主播与粉丝的边界感
-- 替代表达：
-  · "直播" → 用"过来""来看我""见我""上线"等自然口语替代
-  · "直播的时候" → "在的时候""忙的时候"
-  · "看你直播" → "来看我""过来玩""支持我"
-  · "直播时间" → "上线时间""我一般在的时间"
-  · "不播了" → "不在""休息了"
-- 整体语气要像私聊朋友，不是主播对观众说话
-
-${REFERENCE_CASES}
-
-你必须严格按照以下 JSON 格式输出，不要输出任何其他内容：
-{
-  "messageType": "消息类型，从以下选项中选择：抱怨回复慢 / 情绪低落 / 暧昧试探 / 消费后求关注 / 上线安排询问 / 普通互动 / 冷场唤回 / 轻微不满 / 边界试探 / 其他",
-  "emotion": "用一句话判断对方现在的情绪",
-  "warnings": [
-    {"label": "风险标签，如容易越界/容易敷衍", "detail": "具体说明"}
-  ],
-  "gentleReply": "温柔撒娇版回复，30-60字，带亲密感和恋爱感",
-  "casualReply": "轻松暧昧版回复，30-60字，带暧昧拉扯感",
-  "boundaryReply": "甜而不腻版回复，30-60字，亲密但守住底线",
-  "badReply": "一条容易踩雷的回复",
-  "badReason": "为什么不建议这样回复"
-}`
+/** 聊天模式 */
+type ChatMode = 'pre-chat' | 'mid-chat' | 'post-chat'
 
 @Injectable()
 export class AnalyzeService {
-  async analyze(message: string, context: string, fanId?: string, imageUrl?: string): Promise<AnalysisResult> {
-    const config = new Config()
-    const client = new LLMClient(config)
+  private llmClient: LLMClient
 
-    // 构建用户记忆上下文
-    let memoryContext = ''
+  constructor() {
+    const config = new Config()
+    this.llmClient = new LLMClient(config)
+  }
+
+  /** 主分析入口 */
+  async analyze(message: string, context?: string, fanId?: string, imageUrl?: string, chatMode: ChatMode = 'mid-chat') {
+    // 获取粉丝档案
+    let fanProfile = ''
+    let recentChats = ''
     if (fanId) {
       try {
         const supabase = getSupabaseClient()
-        if (supabase) {
-          // 查询粉丝档案
-          const { data: fan } = await supabase
-            .from('fans')
-            .select('name, tags, notes, relationship_level')
-            .eq('id', fanId)
-            .single()
-
-          if (fan) {
-            memoryContext += `\n\n【当前粉丝档案】\n姓名：${fan.name}\n关系等级：${fan.relationship_level}\n标签：${fan.tags || '无'}\n备注：${fan.notes || '无'}`
-          }
-
-          // 查询最近5条对话记录
-          const { data: chatLogs } = await supabase
-            .from('fan_chat_logs')
-            .select('message, analysis_result, created_at')
+        const { data: fan } = await supabase.from('fans').select('*').eq('id', fanId).single()
+        if (fan) {
+          fanProfile = this.buildFanProfile(fan)
+          const { data: logs } = await supabase
+            .from('chat_logs')
+            .select('message, context, chat_mode, created_at')
             .eq('fan_id', fanId)
             .order('created_at', { ascending: false })
             .limit(5)
-
-          if (chatLogs && chatLogs.length > 0) {
-            memoryContext += '\n\n【近期对话记录（最新5条）】'
-            const logs = [...chatLogs].reverse() // 按时间正序
-            for (const log of logs) {
-              const analysis = log.analysis_result as Record<string, string> | null
-              const typeLabel = analysis?.messageType || ''
-              memoryContext += `\n- 粉丝说：「${log.message}」→ 类型：${typeLabel}`
-            }
+          if (logs && logs.length > 0) {
+            recentChats = logs.map((l: any) => `[${l.chat_mode}] ${l.message}`).join('\n')
           }
         }
-      } catch (err) {
-        console.error('获取粉丝记忆失败:', err)
-      }
-    }
-
-    const userContent = context
-      ? `粉丝消息：「${message}」\n粉丝背景：${context}${memoryContext}`
-      : `粉丝消息：「${message}」${memoryContext}`
-
-    // 构建消息列表，支持多模态（图片+文字）
-    const messages: Message[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
-    ]
-
-    if (imageUrl) {
-      // 下载图片并转为 base64 data URL（豆包模型不支持签名 URL）
-      let base64DataUrl = imageUrl
-      try {
-        const imageResp = await fetch(imageUrl)
-        const imageBuffer = Buffer.from(await imageResp.arrayBuffer())
-        const mimeType = imageResp.headers.get('content-type') || 'image/jpeg'
-        const base64 = imageBuffer.toString('base64')
-        base64DataUrl = `data:${mimeType};base64,${base64}`
-        console.log('图片已下载并转为 base64, 大小:', imageBuffer.length)
       } catch (e) {
-        console.error('下载图片失败，使用原始 URL:', e.message)
+        console.error('获取粉丝档案失败:', e.message)
       }
-
-      messages.push({
-        role: 'user',
-        content: [
-          { type: 'image_url', image_url: { url: base64DataUrl } },
-          { type: 'text', text: userContent + '\n\n【附加说明】：用户还上传了一张聊天截图，请结合图片中的对话内容一起分析，生成回复建议。' },
-        ],
-      })
-    } else {
-      messages.push({ role: 'user', content: userContent })
     }
 
-    const response = await client.invoke(messages, {
-      model: 'doubao-seed-2-0-mini-260215',
-      temperature: 0.7,
-    })
-
-    console.log('LLM 原始响应:', response.content)
+    const modePrompt = this.getModePrompt(chatMode)
+    const systemPrompt = this.buildSystemPrompt(modePrompt, chatMode)
+    const userPrompt = this.buildUserPrompt(message, context, fanProfile, recentChats, chatMode)
 
     try {
-      // 尝试从响应中提取 JSON
-      let jsonStr = response.content.trim()
-      // 处理可能的 markdown code block 包裹
-      const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/)
-      if (jsonMatch) {
-        jsonStr = jsonMatch[1].trim()
-      }
-      // 清理中文引号和特殊字符
-      jsonStr = jsonStr
-        .replace(/[\u201c\u201d\u00ab\u00bb]/g, '\u201c')  // 中文/书名号双引号 → 统一为中文左双引号（避免破坏JSON结构）
-        .replace(/[\u2018\u2019]/g, "'")  // 中文单引号 → 英文单引号
-        .replace(/,\s*([}\]])/g, '$1')    // 移除尾部多余逗号
+      const messages: any[] = [
+        { role: 'system', content: systemPrompt },
+      ]
 
-      // 尝试直接解析，如果失败则尝试更激进的修复
-      type ParsedResult = Record<string, string | Array<{ label: string; detail: string }>>
-      let parsed: ParsedResult
-      try {
-        parsed = JSON.parse(jsonStr) as ParsedResult
-      } catch {
-        // 如果解析失败，尝试逐字段提取
-        console.log('JSON 直接解析失败，尝试逐字段提取...')
-        parsed = this.extractFieldsManually(jsonStr)
+      // 如果有图片，添加到用户消息
+      if (imageUrl && chatMode === 'mid-chat') {
+        try {
+          const base64DataUrl = await this.downloadImageAsBase64(imageUrl)
+          messages.push({
+            role: 'user',
+            content: [
+              { type: 'text', text: userPrompt },
+              { type: 'image_url', image_url: { url: base64DataUrl, detail: 'high' } },
+            ] as any,
+          })
+        } catch (imgErr) {
+          console.error('图片下载失败，仅文字分析:', imgErr.message)
+          messages.push({ role: 'user', content: userPrompt })
+        }
+      } else {
+        messages.push({ role: 'user', content: userPrompt })
       }
+
+      const response = await this.llmClient.invoke(messages, {
+        model: 'doubao-seed-2-0-lite-260215',
+        temperature: 0.75,
+      })
+
+      console.log('LLM 原始响应:', response.content)
+      const result = this.parseResponse(response.content, chatMode)
+      return result
+    } catch (error) {
+      console.error('LLM 调用失败:', error.message)
+      return this.getFallbackResult(chatMode)
+    }
+  }
+
+  /** 构建粉丝档案文本 */
+  private buildFanProfile(fan: any): string {
+    const parts = [`昵称：${fan.name}`]
+    if (fan.nickname) parts.push(`常用称呼：${fan.nickname}`)
+    if (fan.relationship_stage || fan.relationship_level) parts.push(`关系阶段：${fan.relationship_stage || fan.relationship_level}`)
+    if (fan.support_habits) parts.push(`消费/支持习惯：${fan.support_habits}`)
+    if (fan.chat_preferences) parts.push(`聊天偏好：${fan.chat_preferences}`)
+    if (fan.triggers) parts.push(`雷点：${fan.triggers}`)
+    if (fan.last_interaction_summary) parts.push(`最近互动摘要：${fan.last_interaction_summary}`)
+    if (fan.next_step_suggestion) parts.push(`维护建议：${fan.next_step_suggestion}`)
+    if (fan.persona_type) parts.push(`互动人设：${fan.persona_type}`)
+    if (fan.tags) parts.push(`标签：${fan.tags}`)
+    if (fan.notes) parts.push(`备注：${fan.notes}`)
+    return parts.join('\n')
+  }
+
+  /** 获取模式专属 prompt */
+  private getModePrompt(mode: ChatMode): string {
+    switch (mode) {
+      case 'pre-chat':
+        return `你现在处于"聊前准备"模式。
+任务：根据粉丝档案和关系阶段，帮主播做好聊前准备。
+需要输出：
+1. 关系阶段判断
+2. 今日互动目标（1句话）
+3. 开场白/破冰话题建议（2-3个）
+4. 前5句破冰话术（按顺序：第1句轻松开场 → 第2句情绪承接 → 第3句制造被记住感 → 第4句轻微暧昧/陪伴感 → 第5句引导继续互动）
+5. 注意事项（该粉丝的雷点、偏好等提醒）
+
+前5句破冰要根据人设风格调整：
+- 温柔陪伴型：温暖关怀、细腻体贴
+- 女友感型：撒娇、吃醋、依赖感
+- 撒娇型：可爱粘人、小情绪
+- 成熟姐姐型：知性包容、偶尔撩一下
+- 轻松朋友型：自然随性、开玩笑`
+
+      case 'mid-chat':
+        return `你现在处于"聊中分析"模式。
+任务：分析粉丝发来的消息，帮主播生成合适的回复。
+需要输出：
+1. 消息类型（抱怨回复慢/情绪低落/暧昧试探/消费后求关注/上线安排询问/普通互动/冷场唤回/轻微不满/边界试探/其他）
+2. 对方情绪
+3. 当前关系阶段判断
+4. 风险提醒
+5. 推荐回复策略（1句话建议怎么回）
+6. 三版回复：温柔撒娇版 / 轻松暧昧版 / 甜而不腻版
+7. 前5句破冰建议（如果需要重新破冰的话）
+8. 聊后复盘建议（本次聊天结束后的总结方向）
+9. 粉丝档案更新建议（该更新什么信息）
+10. 1条不建议发送的话，以及原因`
+
+      case 'post-chat':
+        return `你现在处于"聊后复盘"模式。
+任务：根据本轮聊天内容，帮主播做聊后复盘和档案更新。
+需要输出：
+1. 本轮聊天总结（1-2句话概括互动效果）
+2. 对方情绪变化（从什么情绪到什么情绪）
+3. 关系变化判断（升温/持平/降温）
+4. 粉丝档案更新建议（具体要更新哪些字段）
+5. 下次可以怎么开场（2-3个建议）
+6. 维护建议（下一步该怎么做）`
+    }
+  }
+
+  /** 构建系统 prompt */
+  private buildSystemPrompt(modePrompt: string, mode: ChatMode): string {
+    return `你是一位资深主播私域关系维护顾问，擅长帮助主播维护粉丝关系。
+
+⚠️ 格式要求：你必须严格按照指定的JSON格式返回结果，所有字段都必须包含，不能遗漏任何一个字段。不要添加JSON之外的内容。
+
+${modePrompt}
+
+【回复原则】
+1. 你可以根据主播设定生成不同程度的恋爱感、暧昧感、撒娇感回复。
+2. 可以表达"想你""在意你""你对我很特别""看到你来我会开心"等人设内亲密表达。
+3. 可以营造粉丝被重视、被偏爱、被记住的感觉。
+4. 如果用户要求强恋爱感回复，可以生成女友感、暧昧拉扯感、轻微吃醋感的话术。
+5. 所有亲密表达默认属于直播/语音陪伴场景下的人设互动，不代表现实恋爱承诺。
+6. 不承诺线下见面、现实恋爱关系、私下陪伴绑定、金钱回报或唯一关系。
+7. 不使用威胁、羞辱、冷暴力、PUA、卖惨或欺骗方式诱导用户付费。
+8. 可以自然引导用户继续互动、来看我、送礼支持，但语气要轻松，不强迫。
+9. 回复要像微信聊天，短句、自然、有情绪价值。
+
+【话术红线 - 禁止出现以下词汇】
+- 禁止出现"直播"二字（用"来看我""在的时候""上线"替代）
+- 禁止出现"播"字（用"在""来"替代）
+- 禁止出现"观众"（用"你"直接称呼）
+- 禁止出现"粉丝"（用昵称或"你"称呼）
+
+【人设风格对照】
+- 温柔陪伴型：温暖关怀，细腻体贴，像知心姐姐
+- 女友感型：撒娇依赖，会吃醋，会说"想你了""你怎么才来"
+- 撒娇型：可爱粘人，会闹小脾气，"哼你不理我"
+- 成熟姐姐型：知性包容，偶尔撩一下，"乖，听话"
+- 轻松朋友型：随性自然，开玩笑打闹，不刻意暧昧
+
+【关系阶段说明】
+- 普通互动：刚认识不久，互动较浅
+- 熟悉陪伴：经常互动，有一定默契
+- 暧昧升温：双方有暧昧信号，可以适当升温
+- 恋爱感人设：已建立人设内恋爱感，可以深入角色扮演
+- 冷淡流失：互动减少，需要唤回
+- 风险降温：有边界试探或不当要求，需要降温处理
+
+【输出格式要求】
+严格按照以下JSON格式输出，不要添加注释或额外文字：
+${this.getOutputFormat(mode)}`
+  }
+
+  /** 获取输出格式 */
+  private getOutputFormat(mode: ChatMode): string {
+    switch (mode) {
+      case 'pre-chat':
+        return `{
+  "relationshipStage": "关系阶段",
+  "dailyGoal": "今日互动目标",
+  "openers": ["开场白1", "开场白2", "开场白3"],
+  "iceBreaker": {
+    "1": "轻松开场",
+    "2": "情绪承接",
+    "3": "制造被记住感",
+    "4": "轻微暧昧/陪伴感",
+    "5": "引导继续互动"
+  },
+  "precautions": ["注意1", "注意2"]
+}`
+
+      case 'mid-chat':
+        return `{
+  "messageType": "消息类型",
+  "emotion": "对方情绪",
+  "relationshipStage": "关系阶段判断",
+  "riskWarning": "风险提醒",
+  "replyStrategy": "推荐回复策略",
+  "gentleReply": "温柔撒娇版回复",
+  "casualReply": "轻松暧昧版回复",
+  "sweetReply": "甜而不腻版回复",
+  "iceBreaker": {
+    "1": "轻松开场",
+    "2": "情绪承接",
+    "3": "制造被记住感",
+    "4": "轻微暧昧/陪伴感",
+    "5": "引导继续互动"
+  },
+  "postChatReview": "聊后复盘方向建议",
+  "fanProfileUpdate": "粉丝档案更新建议",
+  "badReply": "不建议发送的话",
+  "badReason": "不建议的原因"
+}`
+
+      case 'post-chat':
+        return `{
+  "chatSummary": "本轮聊天总结",
+  "emotionChange": "对方情绪变化",
+  "relationshipChange": "关系变化判断",
+  "profileUpdateSuggestions": {
+    "relationshipStage": "建议更新的关系阶段",
+    "lastInteractionSummary": "建议更新的互动摘要",
+    "nextStepSuggestion": "建议更新的下一步建议",
+    "otherUpdates": "其他需要更新的信息"
+  },
+  "nextOpeners": ["下次开场1", "下次开场2", "下次开场3"],
+  "maintenanceAdvice": "维护建议"
+}`
+    }
+  }
+
+  /** 构建用户 prompt */
+  private buildUserPrompt(message: string, context?: string, fanProfile?: string, recentChats?: string, mode?: ChatMode): string {
+    let prompt = ''
+
+    if (mode === 'pre-chat') {
+      prompt = '请帮我做聊前准备。当前没有收到粉丝消息，请仅根据粉丝档案和关系阶段生成开场白和破冰建议。\n'
+    } else if (mode === 'post-chat') {
+      prompt = '请帮我做聊后复盘。\n'
+      prompt += `本轮聊天内容：${message}\n`
+    } else {
+      prompt = `粉丝发来的消息：${message}\n`
+    }
+
+    if (context) prompt += `补充背景：${context}\n`
+    if (fanProfile) prompt += `\n【粉丝档案】\n${fanProfile}\n`
+    if (recentChats) prompt += `\n【最近5条互动记录】\n${recentChats}\n`
+
+    return prompt
+  }
+
+  /** 获取当前模式的默认值 */
+  private getDefaults(mode: ChatMode): any {
+    if (mode === 'mid-chat') {
       return {
-        messageType: (parsed.messageType as string) || '其他',
-        emotion: (parsed.emotion as string) || '无法判断',
-        warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
-        gentleReply: (parsed.gentleReply as string) || '',
-        casualReply: (parsed.casualReply as string) || '',
-        boundaryReply: (parsed.boundaryReply as string) || '',
-        badReply: (parsed.badReply as string) || '',
-        badReason: (parsed.badReason as string) || '',
+        messageType: '其他', emotion: '中性', relationshipStage: '普通互动',
+        riskWarning: '', replyStrategy: '',
+        gentleReply: '我在呢，刚忙完~', casualReply: '嘻嘻，想我了吗？', sweetReply: '你来了我就开心~',
+        iceBreaker: { '1': '嘿~', '2': '在干嘛呢', '3': '记得你上次说的', '4': '想你了', '5': '明天还在吗？' },
+        postChatReview: '', fanProfileUpdate: '', badReply: '', badReason: ''
       }
-    } catch (err) {
-      console.error('解析 LLM 响应失败:', err)
+    } else if (mode === 'pre-chat') {
       return {
-        messageType: '其他',
-        emotion: '无法判断',
-        warnings: [],
-        gentleReply: '收到消息了，稍等回复你～',
-        casualReply: '嗨～刚看到，等下回你',
-        boundaryReply: '谢谢消息，我这边有点忙，晚点回复你',
-        badReply: '（解析失败，请重试）',
-        badReason: 'AI 响应解析异常',
+        relationshipStage: '普通互动', dailyGoal: '',
+        openers: ['嗨~在吗？', '今天过得怎么样？', '好久没聊了~'],
+        iceBreaker: { '1': '嘿~', '2': '在干嘛呢', '3': '记得你上次说的', '4': '想你了', '5': '明天还在吗？' },
+        precautions: ['注意粉丝情绪', '避免过于冷淡']
+      }
+    } else {
+      return {
+        chatSummary: '', emotionChange: '', relationshipChange: '持平',
+        profileUpdateSuggestions: {},
+        nextOpeners: ['嗨~', '在吗？', '今天怎样？'],
+        maintenanceAdvice: ''
       }
     }
   }
 
-  /** 当 JSON.parse 失败时，手动从文本中提取各字段 */
-  private extractFieldsManually(text: string): Record<string, string | Array<{ label: string; detail: string }>> {
-    const result: Record<string, string | Array<{ label: string; detail: string }>> = {}
-    
-    // 提取简单字符串字段
-    const stringFields = ['messageType', 'emotion', 'gentleReply', 'casualReply', 'boundaryReply', 'badReply', 'badReason']
-    for (const field of stringFields) {
-      // 匹配 "field": "value" 或 "field": value
-      const regex = new RegExp(`"${field}"\\s*:\\s*"([\\s\\S]*?)"\\s*[,}\\n]`)
-      const match = text.match(regex)
-      if (match) {
-        result[field] = match[1].trim()
+  /** 解析 LLM 响应 */
+  private parseResponse(content: string, mode: ChatMode): any {
+    try {
+      // 尝试直接解析
+      const jsonStr = this.extractJson(content)
+
+      if (jsonStr) {
+        let parsed = JSON.parse(jsonStr)
+
+        // 字段名映射：兼容 LLM 返回的不同字段名
+        if (parsed.boundaryReply && !parsed.sweetReply) {
+          parsed.sweetReply = parsed.boundaryReply
+        }
+        if (parsed.badReply && !parsed.notSuggested) {
+          parsed.notSuggested = parsed.badReply
+        }
+        if (parsed.badReason && !parsed.notSuggestedReason) {
+          parsed.notSuggestedReason = parsed.badReason
+        }
+        if (parsed.doNotSend && !parsed.notSuggested) {
+          parsed.notSuggested = parsed.doNotSend
+        }
+        if (parsed.doNotSendReason && !parsed.notSuggestedReason) {
+          parsed.notSuggestedReason = parsed.doNotSendReason
+        }
+        if (parsed.fanProfileUpdate && !parsed.profileUpdateSuggestions) {
+          parsed.profileUpdateSuggestions = parsed.fanProfileUpdate
+        }
+        // postChatReview 可能是字符串，转为对象
+        if (typeof parsed.postChatReview === 'string') {
+          parsed.postChatReview = { summary: parsed.postChatReview, nextStep: '' }
+        }
+        // iceBreaker 可能是 {1:x,2:x} 格式的对象，转为数组
+        if (parsed.iceBreaker && typeof parsed.iceBreaker === 'object' && !Array.isArray(parsed.iceBreaker)) {
+          const arr = Object.keys(parsed.iceBreaker).sort().map(k => parsed.iceBreaker[k])
+          parsed.iceBreaker = arr
+        }
+        // 合并默认值，确保新字段不为空
+        const defaults = this.getDefaults(mode)
+        const merged = { ...defaults, ...parsed }
+        // 确保 iceBreaker 是数组格式
+        if (!Array.isArray(merged.iceBreaker)) {
+          merged.iceBreaker = defaults.iceBreaker as string[]
+        }
+        // 确保 profileUpdateSuggestions 不为空
+        if (!merged.profileUpdateSuggestions) {
+          merged.profileUpdateSuggestions = defaults.profileUpdateSuggestions
+        }
+        // 确保 postChatReview 是对象
+        if (typeof merged.postChatReview === 'string') {
+          merged.postChatReview = { summary: merged.postChatReview, nextStep: '' }
+        }
+        return { status: 'ok', data: merged, mode }
       }
+    } catch (e) {
+      console.error('JSON 解析失败，尝试手动提取:', e.message)
     }
 
-    // 提取 warnings 数组
-    const warningsMatch = text.match(/"warnings"\s*:\s*\[([\s\S]*?)\]/)
-    if (warningsMatch) {
-      const warnings: Array<{ label: string; detail: string }> = []
-      const items = warningsMatch[1].matchAll(/\{[^}]*"label"\s*:\s*"([^"]*?)"[^}]*"detail"\s*:\s*"([^"]*?)"[^}]*\}/g)
-      for (const item of items) {
-        warnings.push({ label: item[1], detail: item[2] })
-      }
-      result.warnings = warnings
+    // 手动提取 fallback
+    const result: any = { status: 'ok', mode }
+    result.data = this.extractFieldsManually(content, mode)
+    return result
+  }
+
+  /** 提取 JSON 字符串 */
+  private extractJson(text: string): string | null {
+    // 去掉 markdown 代码块
+    let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+
+    // 尝试找到 JSON 对象
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
+    if (start !== -1 && end > start) {
+      let jsonStr = cleaned.substring(start, end + 1)
+      // 修复中文引号
+      jsonStr = jsonStr.replace(/[\u201c\u201d]/g, '"').replace(/[\u2018\u2019]/g, "'")
+      // 修复嵌入在字符串内的引号 - 将 \" 替换为 '
+      jsonStr = jsonStr.replace(/\\\"/g, "'")
+      return jsonStr
+    }
+    return null
+  }
+
+  /** 手动提取字段 */
+  private extractFieldsManually(content: string, mode: ChatMode): any {
+    const result: any = {}
+
+    if (mode === 'mid-chat') {
+      result.messageType = this.extractField(content, 'messageType', '消息类型') || '其他'
+      result.emotion = this.extractField(content, 'emotion', '情绪') || '中性'
+      result.relationshipStage = this.extractField(content, 'relationshipStage', '关系阶段') || '普通互动'
+      result.riskWarning = this.extractField(content, 'riskWarning', '风险提醒') || ''
+      result.replyStrategy = this.extractField(content, 'replyStrategy', '回复策略') || ''
+      result.gentleReply = this.extractField(content, 'gentleReply', '温柔撒娇') || '我在呢，刚忙完~'
+      result.casualReply = this.extractField(content, 'casualReply', '轻松暧昧') || '嘻嘻，想我了吗？'
+      result.sweetReply = this.extractField(content, 'sweetReply', '甜而不腻') || '你来了我就开心~'
+      result.iceBreaker = { '1': '嘿~', '2': '在干嘛呢', '3': '记得你上次说的', '4': '想你了', '5': '明天还在吗？' }
+      result.postChatReview = this.extractField(content, 'postChatReview', '复盘') || ''
+      result.fanProfileUpdate = this.extractField(content, 'fanProfileUpdate', '档案更新') || ''
+      result.badReply = this.extractField(content, 'badReply', '不建议') || ''
+      result.badReason = this.extractField(content, 'badReason', '原因') || ''
+    } else if (mode === 'pre-chat') {
+      result.relationshipStage = this.extractField(content, 'relationshipStage', '关系阶段') || '普通互动'
+      result.dailyGoal = this.extractField(content, 'dailyGoal', '互动目标') || ''
+      result.openers = ['嗨~在吗？', '今天过得怎么样？', '好久没聊了~']
+      result.iceBreaker = { '1': '嘿~', '2': '在干嘛呢', '3': '记得你上次说的', '4': '想你了', '5': '明天还在吗？' }
+      result.precautions = ['注意粉丝情绪', '避免过于冷淡']
+    } else {
+      result.chatSummary = this.extractField(content, 'chatSummary', '聊天总结') || ''
+      result.emotionChange = this.extractField(content, 'emotionChange', '情绪变化') || ''
+      result.relationshipChange = this.extractField(content, 'relationshipChange', '关系变化') || '持平'
+      result.profileUpdateSuggestions = {}
+      result.nextOpeners = ['嗨~', '在吗？', '今天怎样？']
+      result.maintenanceAdvice = this.extractField(content, 'maintenanceAdvice', '维护建议') || ''
     }
 
     return result
+  }
+
+  /** 从文本中提取单个字段值 */
+  private extractField(text: string, fieldKey: string, fieldLabel: string): string {
+    // 尝试 JSON key
+    const patterns = [
+      new RegExp(`"${fieldKey}"\\s*:\\s*"([^"]*?)"`),
+      new RegExp(`"${fieldKey}"\\s*:\\s*"([\\s\\S]*?)"`),
+      new RegExp(`${fieldLabel}[：:]\\s*(.+?)[\\n,}]`),
+    ]
+    for (const p of patterns) {
+      const m = text.match(p)
+      if (m) return m[1].trim()
+    }
+    return ''
+  }
+
+  /** Fallback 结果 */
+  private getFallbackResult(mode: ChatMode): any {
+    const fallback: any = { status: 'fallback', mode }
+
+    if (mode === 'pre-chat') {
+      fallback.data = {
+        relationshipStage: '普通互动',
+        dailyGoal: '保持互动频率，增加熟悉感',
+        openers: ['嗨~在吗？', '今天过得怎么样？'],
+        iceBreaker: { '1': '嘿~', '2': '在干嘛呢', '3': '记得你上次说的', '4': '想你了', '5': '明天还在吗？' },
+        precautions: ['保持自然', '不要太刻意'],
+      }
+    } else if (mode === 'mid-chat') {
+      fallback.data = {
+        messageType: '其他', emotion: '中性',
+        relationshipStage: '普通互动', riskWarning: '',
+        replyStrategy: '自然回应即可',
+        gentleReply: '我在呢，刚忙完~',
+        casualReply: '嘻嘻，想我了吗？',
+        sweetReply: '你来了我就开心~',
+        iceBreaker: { '1': '嘿~', '2': '在干嘛呢', '3': '记得你上次说的', '4': '想你了', '5': '明天还在吗？' },
+        postChatReview: '', fanProfileUpdate: '',
+        badReply: '', badReason: '',
+      }
+    } else {
+      fallback.data = {
+        chatSummary: '互动正常', emotionChange: '情绪平稳',
+        relationshipChange: '持平', profileUpdateSuggestions: {},
+        nextOpeners: ['嗨~', '在吗？'], maintenanceAdvice: '保持互动频率',
+      }
+    }
+
+    return fallback
+  }
+
+  /** 下载图片并转为 base64 data URL */
+  private downloadImageAsBase64(imageUrl: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const client = imageUrl.startsWith('https') ? https : http
+      client.get(imageUrl, (res) => {
+        if (res.statusCode === 302 || res.statusCode === 301) {
+          const redirectUrl = res.headers.location
+          if (redirectUrl) {
+            this.downloadImageAsBase64(redirectUrl).then(resolve).catch(reject)
+            return
+          }
+        }
+        const chunks: Buffer[] = []
+        res.on('data', (chunk) => chunks.push(chunk))
+        res.on('end', () => {
+          const buffer = Buffer.concat(chunks)
+          const base64 = buffer.toString('base64')
+          const contentType = res.headers['content-type'] || 'image/jpeg'
+          const dataUrl = `data:${contentType};base64,${base64}`
+          console.log(`图片下载完成: ${buffer.length} bytes, type: ${contentType}`)
+          resolve(dataUrl)
+        })
+        res.on('error', reject)
+      }).on('error', reject)
+    })
   }
 }

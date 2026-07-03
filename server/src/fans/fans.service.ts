@@ -1,124 +1,103 @@
-import { Injectable } from '@nestjs/common'
-import { getSupabaseClient } from '@/storage/database/supabase-client'
-
-interface CreateFanDto {
-  name: string
-  tags: string
-  notes: string
-  relationshipLevel: string
-}
-
-interface CreateChatLogDto {
-  fanId: string
-  message: string
-  context: string
-  analysisResult: Record<string, unknown>
-}
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { getSupabaseClient } from '../storage/database/supabase-client'
 
 @Injectable()
 export class FansService {
-  /** 获取所有粉丝列表 */
+  private supabase = getSupabaseClient()
+
   async findAll() {
-    const client = getSupabaseClient()
-    const { data, error } = await client
+    const { data, error } = await this.supabase
       .from('fans')
-      .select('id, name, tags, notes, relationship_level, created_at, updated_at')
-      .order('updated_at', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: false })
-    if (error) throw new Error(`查询粉丝列表失败: ${error.message}`)
+      .select('*')
+      .order('updated_at', { ascending: false })
+    if (error) throw error
     return data
   }
 
-  /** 获取单个粉丝（含最近5条对话记录） */
   async findOne(id: string) {
-    const client = getSupabaseClient()
-    const { data, error } = await client
+    const { data, error } = await this.supabase
       .from('fans')
-      .select('id, name, tags, notes, relationship_level, created_at, updated_at')
+      .select('*')
       .eq('id', id)
-      .maybeSingle()
-    if (error) throw new Error(`查询粉丝详情失败: ${error.message}`)
-    if (!data) throw new Error('粉丝不存在')
-
-    // 获取最近对话记录
-    const { data: chatLogs, error: chatError } = await client
-      .from('chat_logs')
-      .select('id, message, context, analysis_result, created_at')
-      .eq('fan_id', id)
-      .order('created_at', { ascending: false })
-      .limit(5)
-    if (chatError) throw new Error(`查询对话记录失败: ${chatError.message}`)
-
-    return { ...data, recentChats: chatLogs || [] }
+      .single()
+    if (error) throw new NotFoundException('粉丝不存在')
+    return data
   }
 
-  /** 创建粉丝 */
-  async create(dto: CreateFanDto) {
-    const client = getSupabaseClient()
-    const { data, error } = await client
+  async create(body: Record<string, any>) {
+    const insertData: Record<string, any> = { name: body.name }
+    if (body.relationship_stage) insertData.relationship_stage = body.relationship_stage
+    if (body.support_habits) insertData.support_habits = body.support_habits
+    if (body.chat_preferences) insertData.chat_preferences = body.chat_preferences
+    if (body.triggers) insertData.triggers = body.triggers
+    if (body.nickname) insertData.nickname = body.nickname
+    if (body.last_interaction_summary) insertData.last_interaction_summary = body.last_interaction_summary
+    if (body.next_step_suggestion) insertData.next_step_suggestion = body.next_step_suggestion
+    if (body.persona_type) insertData.persona_type = body.persona_type
+    if (body.tags) insertData.tags = body.tags
+    if (body.notes) insertData.notes = body.notes
+    if (body.relationship_level) insertData.relationship_level = body.relationship_level
+
+    const { data, error } = await this.supabase
       .from('fans')
-      .insert({
-        name: dto.name,
-        tags: dto.tags || null,
-        notes: dto.notes || null,
-        relationship_level: dto.relationshipLevel || '普通',
-      })
-      .select('id, name, tags, notes, relationship_level, created_at, updated_at')
-    if (error) throw new Error(`创建粉丝失败: ${error.message}`)
-    return data?.[0] || null
+      .insert(insertData)
+      .select()
+      .single()
+    if (error) throw error
+    return data
   }
 
-  /** 更新粉丝 */
-  async update(id: string, dto: CreateFanDto) {
-    const client = getSupabaseClient()
-    const { data, error } = await client
+  async update(id: string, body: Record<string, any>) {
+    const updateData: Record<string, any> = { updated_at: new Date().toISOString() }
+    const fields = ['name', 'relationship_stage', 'support_habits', 'chat_preferences',
+      'triggers', 'nickname', 'last_interaction_summary', 'next_step_suggestion',
+      'persona_type', 'tags', 'notes', 'relationship_level']
+    for (const f of fields) {
+      if (body[f] !== undefined) updateData[f] = body[f]
+    }
+
+    const { data, error } = await this.supabase
       .from('fans')
-      .update({
-        name: dto.name,
-        tags: dto.tags || null,
-        notes: dto.notes || null,
-        relationship_level: dto.relationshipLevel || '普通',
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', id)
-      .select('id, name, tags, notes, relationship_level, created_at, updated_at')
-    if (error) throw new Error(`更新粉丝失败: ${error.message}`)
-    return data?.[0] || null
+      .select()
+      .single()
+    if (error) throw new NotFoundException('粉丝不存在')
+    return data
   }
 
-  /** 删除粉丝 */
   async remove(id: string) {
-    const client = getSupabaseClient()
-    const { error } = await client.from('fans').delete().eq('id', id)
-    if (error) throw new Error(`删除粉丝失败: ${error.message}`)
+    const { error } = await this.supabase
+      .from('fans')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
   }
 
-  /** 保存对话记录 */
-  async createChatLog(dto: CreateChatLogDto) {
-    const client = getSupabaseClient()
-    const { data, error } = await client
+  async addChatLog(fanId: string, body: Record<string, any>) {
+    const { data, error } = await this.supabase
       .from('chat_logs')
       .insert({
-        fan_id: dto.fanId,
-        message: dto.message,
-        context: dto.context || null,
-        analysis_result: dto.analysisResult || null,
+        fan_id: fanId,
+        message: body.message,
+        context: body.context || null,
+        analysis_result: body.analysis_result || null,
+        chat_mode: body.chat_mode || 'mid-chat',
       })
-      .select('id, fan_id, message, context, analysis_result, created_at')
-    if (error) throw new Error(`保存对话记录失败: ${error.message}`)
-    return data?.[0] || null
+      .select()
+      .single()
+    if (error) throw error
+    return data
   }
 
-  /** 获取粉丝的对话记录 */
   async getChatLogs(fanId: string) {
-    const client = getSupabaseClient()
-    const { data, error } = await client
+    const { data, error } = await this.supabase
       .from('chat_logs')
-      .select('id, message, context, analysis_result, created_at')
+      .select('*')
       .eq('fan_id', fanId)
       .order('created_at', { ascending: false })
-      .limit(20)
-    if (error) throw new Error(`查询对话记录失败: ${error.message}`)
+      .limit(10)
+    if (error) throw error
     return data
   }
 }
