@@ -16,7 +16,7 @@ import {
   Ban,
   Smile,
   Info,
-  MessageSquare,
+
   Loader,
 } from 'lucide-react-taro'
 
@@ -104,30 +104,30 @@ const IndexPage = () => {
 
   return (
     <View className="flex flex-col min-h-screen bg-background">
-      {/* Header - 融入内容流，不做明显分割 */}
-      <View className="bg-background sticky top-0 z-40 px-5 pt-5 pb-3">
+      {/* Header - 融入内容流 */}
+      <View className="bg-background sticky top-0 z-40 px-4 pt-4 pb-2">
         <View className="flex flex-row items-center justify-between">
           <View className="flex flex-row items-center gap-2">
-            <MessageCircleHeart size={22} color="#D98C9A" />
-            <Text className="block text-lg font-bold text-foreground">回复小助手</Text>
+            <MessageCircleHeart size={20} color="#D98C9A" />
+            <Text className="block text-base font-bold text-foreground">回复小助手</Text>
           </View>
-          <View className="w-8 h-8 flex items-center justify-center rounded-full bg-muted">
-            <Info size={16} color="#7A8061" />
+          <View className="w-7 h-7 flex items-center justify-center rounded-full bg-muted">
+            <Info size={14} color="#7A8061" />
           </View>
         </View>
         <Text className="block text-xs text-muted-foreground mt-1">帮你拿捏分寸，轻松回复粉丝消息</Text>
       </View>
 
       {/* Scrollable Content */}
-      <View className="flex-1 overflow-y-auto pb-8">
+      <View className="flex-1 overflow-y-auto pb-6">
         {/* ===== 消息输入区 ===== */}
-        <View className="px-5 pt-2 pb-5">
-          {/* 主输入框 - 胶囊型设计，输入与按钮一体 */}
-          <View className="flex flex-row items-center" style={{ backgroundColor: '#ffffff', borderRadius: '999px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', height: '52px', paddingLeft: '20px', paddingRight: '4px' }}>
+        <View className="px-4 pt-1 pb-3">
+          {/* 主输入框 - 胶囊型 */}
+          <View className="flex flex-row items-center" style={{ backgroundColor: '#ffffff', borderRadius: '999px', boxShadow: '0 2px 10px rgba(0,0,0,0.07)', height: '46px', paddingLeft: '16px', paddingRight: '4px' }}>
             <View style={{ flex: 1 }}>
               <Input
                 className="border-none bg-transparent p-0 h-full shadow-none ring-0 focus-within:ring-0 focus-within:border-none rounded-none"
-                style={{ fontSize: '15px' }}
+                style={{ fontSize: '14px' }}
                 placeholder="粘贴粉丝发来的微信消息..."
                 placeholderClass="text-gray-400"
                 value={message}
@@ -137,22 +137,22 @@ const IndexPage = () => {
             </View>
             <View
               onClick={handleAnalyze}
-              style={{ flexShrink: 0, backgroundColor: '#D98C9A', borderRadius: '999px', padding: '0 20px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: loading ? 0.7 : 1 }}
+              style={{ flexShrink: 0, backgroundColor: '#D98C9A', borderRadius: '999px', padding: '0 16px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: loading ? 0.7 : 1 }}
             >
               {loading ? (
-                <Loader size={16} color="#ffffff" className="animate-spin" />
+                <Loader size={14} color="#ffffff" className="animate-spin" />
               ) : (
-                <Sparkles size={16} color="#ffffff" />
+                <Sparkles size={14} color="#ffffff" />
               )}
-              <Text style={{ color: '#ffffff', fontSize: '14px', fontWeight: 600 }}>{loading ? '分析中' : '分析'}</Text>
+              <Text style={{ color: '#ffffff', fontSize: '13px', fontWeight: 600 }}>{loading ? '分析中' : '分析'}</Text>
             </View>
           </View>
 
-          {/* 补充背景输入框 - 同样胶囊型 */}
-          <View className="mt-3 flex flex-row items-center" style={{ backgroundColor: '#ffffff', borderRadius: '999px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', height: '44px', paddingLeft: '20px' }}>
+          {/* 补充背景输入框 */}
+          <View className="mt-2 flex flex-row items-center" style={{ backgroundColor: '#ffffff', borderRadius: '999px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', height: '38px', paddingLeft: '16px' }}>
             <Input
               className="border-none bg-transparent p-0 h-full shadow-none ring-0 focus-within:ring-0 focus-within:border-none rounded-none"
-              style={{ fontSize: '13px' }}
+              style={{ fontSize: '12px' }}
               placeholder="补充粉丝背景（可选）"
               placeholderClass="text-gray-400"
               value={context}
@@ -162,36 +162,19 @@ const IndexPage = () => {
           </View>
         </View>
 
-        {/* ===== AI分析结果区 - 合并为一个连贯的卡片 ===== */}
+        {/* ===== 分析结果 - 全部合一，紧凑展示 ===== */}
         {result && (
-          <View className="px-5 pb-5">
-            <View className="bg-card rounded-3xl overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(217,140,154,0.12)' }}>
-              {/* 原始消息回显 */}
-              <View className="px-5 pt-5 pb-4">
-                <View className="flex flex-row items-center gap-2 mb-2">
-                  <MessageSquare size={14} color="#7A8061" />
-                  <Text className="block text-xs font-semibold text-muted-foreground">粉丝消息</Text>
-                </View>
-                <View className="bg-muted rounded-xl px-4 py-3">
-                  <Text className="block text-sm text-foreground leading-relaxed">{message.trim()}</Text>
-                  {context.trim() && (
-                    <Text className="block text-xs text-muted-foreground mt-2 pt-2 border-t border-border">背景：{context.trim()}</Text>
-                  )}
-                </View>
-              </View>
-
-              {/* 分隔线 */}
-              <View className="mx-5 h-px bg-border" />
-
-              {/* 消息类型 + 情绪判断 合并展示 */}
-              <View className="px-5 py-4">
-                <View className="flex flex-row items-center gap-3">
-                  <View className="flex flex-row items-center gap-2">
-                    <Stamp size={14} color="#D98C9A" />
-                    <Text className="block text-xs font-semibold text-muted-foreground">类型</Text>
+          <View className="px-4 pb-4">
+            <View className="bg-card rounded-2xl overflow-hidden" style={{ boxShadow: '0 2px 10px rgba(217,140,154,0.10)' }}>
+              {/* 消息类型 + 情绪 - 一行紧凑 */}
+              <View className="px-4 pt-3 pb-3">
+                <View className="flex flex-row items-center gap-2 flex-wrap">
+                  <View className="flex flex-row items-center gap-1">
+                    <Stamp size={12} color="#D98C9A" />
+                    <Text className="block text-xs text-muted-foreground">类型</Text>
                   </View>
                   <View
-                    className="inline-flex items-center px-3 py-1 rounded-full"
+                    className="inline-flex items-center px-2 py-0 rounded-full"
                     style={{ backgroundColor: getTypeStyle(result.messageType).bg }}
                   >
                     <Text
@@ -201,129 +184,118 @@ const IndexPage = () => {
                       {result.messageType}
                     </Text>
                   </View>
-                </View>
-                <View className="flex flex-row items-start gap-2 mt-3">
-                  <HeartPulse size={14} color="#D98C9A" className="mt-1 shrink-0" />
-                  <Text className="block text-sm text-foreground leading-relaxed">{result.emotion}</Text>
+                  <View className="mx-1 h-3 w-px bg-border" />
+                  <View className="flex flex-row items-center gap-1 flex-1">
+                    <HeartPulse size={12} color="#D98C9A" />
+                    <Text className="block text-xs text-foreground leading-snug">{result.emotion}</Text>
+                  </View>
                 </View>
               </View>
+
+              {/* 注意事项 - 紧凑展示 */}
+              {result.warnings && result.warnings.length > 0 && (
+                <>
+                  <View className="mx-4 h-px bg-border" />
+                  <View className="px-4 py-2">
+                    <View className="flex flex-row items-center gap-1 mb-1">
+                      <ShieldAlert size={12} color="#C77763" />
+                      <Text className="block text-xs font-semibold text-muted-foreground">注意</Text>
+                    </View>
+                    <View className="flex flex-col gap-1">
+                      {result.warnings.map((w, i) => (
+                        <View key={i} className="flex flex-row items-start gap-1">
+                          <View className="w-1 h-1 rounded-full bg-destructive mt-2 shrink-0" />
+                          <Text className="block text-xs text-foreground leading-snug">
+                            <Text className="font-bold text-destructive">{w.label}</Text> → {w.detail}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                </>
+              )}
 
               {/* 分隔线 */}
-              <View className="mx-5 h-px bg-border" />
+              <View className="mx-4 h-px bg-border" />
 
-              {/* 注意事项 */}
-              <View className="px-5 py-4">
-                <View className="flex flex-row items-center gap-2 mb-3">
-                  <ShieldAlert size={14} color="#C77763" />
-                  <Text className="block text-xs font-semibold text-muted-foreground">注意</Text>
+              {/* 回复建议 */}
+              <View className="px-4 py-3">
+                <View className="flex flex-row items-center gap-1 mb-2">
+                  <PenTool size={12} color="#D98C9A" />
+                  <Text className="block text-xs font-bold text-foreground">回复建议</Text>
+                  <Text className="block text-xs text-muted-foreground">· 点击复制</Text>
                 </View>
-                <View className="flex flex-col gap-2">
-                  {result.warnings.map((w, i) => (
-                    <View key={i} className="flex flex-row items-start gap-2">
-                      <View className="w-2 h-2 rounded-full bg-destructive mt-2 shrink-0" />
-                      <Text className="block text-sm text-foreground leading-relaxed">
-                        <Text className="font-bold text-destructive">{w.label}</Text> → {w.detail}
-                      </Text>
-                    </View>
-                  ))}
+
+                {/* 温柔安抚版 */}
+                <View
+                  className="rounded-xl px-3 py-2 mb-2 active:bg-primary-container"
+                  style={{ backgroundColor: '#FDE2E4' }}
+                  onClick={() => handleCopy(result.gentleReply)}
+                >
+                  <View className="flex flex-row items-center gap-1 mb-1">
+                    <MessageCircleHeart size={11} color="#D98C9A" />
+                    <Text className="block text-xs font-bold text-primary">温柔安抚</Text>
+                  </View>
+                  <Text className="block text-xs text-foreground leading-snug">{result.gentleReply}</Text>
+                </View>
+
+                {/* 轻松互动版 */}
+                <View
+                  className="rounded-xl px-3 py-2 mb-2 active:bg-primary-container"
+                  style={{ backgroundColor: '#FFF1DE' }}
+                  onClick={() => handleCopy(result.casualReply)}
+                >
+                  <View className="flex flex-row items-center gap-1 mb-1">
+                    <Smile size={11} color="#C77763" />
+                    <Text className="block text-xs font-bold text-warning">轻松互动</Text>
+                  </View>
+                  <Text className="block text-xs text-foreground leading-snug">{result.casualReply}</Text>
+                </View>
+
+                {/* 边界清晰版 */}
+                <View
+                  className="rounded-xl px-3 py-2 active:bg-primary-container"
+                  style={{ backgroundColor: '#F0EDE4' }}
+                  onClick={() => handleCopy(result.boundaryReply)}
+                >
+                  <View className="flex flex-row items-center gap-1 mb-1">
+                    <ShieldCheck size={11} color="#7A8061" />
+                    <Text className="block text-xs font-bold text-muted-foreground">边界清晰</Text>
+                  </View>
+                  <Text className="block text-xs text-foreground leading-snug">{result.boundaryReply}</Text>
+                </View>
+              </View>
+
+              {/* 避雷提醒 - 嵌入同一卡片 */}
+              <View className="mx-4 h-px bg-border" />
+              <View className="px-4 py-3" style={{ backgroundColor: '#FFF5F5' }}>
+                <View className="flex flex-row items-center gap-1 mb-1">
+                  <TriangleAlert size={12} color="#C77763" />
+                  <Text className="block text-xs font-bold text-destructive">避雷提醒</Text>
+                </View>
+                <View className="bg-white bg-opacity-60 rounded-lg px-3 py-2 mb-1">
+                  <Text className="block text-xs text-foreground line-through decoration-destructive">
+                    {result.badReply}
+                  </Text>
+                </View>
+                <View className="flex flex-row items-start gap-1">
+                  <Ban size={11} color="#C77763" />
+                  <Text className="block text-xs text-destructive leading-snug">{result.badReason}</Text>
                 </View>
               </View>
             </View>
           </View>
         )}
 
-        {/* ===== 三种回复建议区 - 合并为一个卡片 ===== */}
-        {result && (
-          <View className="px-5 pb-5">
-            <View className="flex flex-row items-center gap-2 mb-3 px-1">
-              <PenTool size={16} color="#D98C9A" />
-              <Text className="block text-sm font-bold text-foreground">回复建议</Text>
-              <Text className="block text-xs text-muted-foreground">点击即可复制</Text>
-            </View>
-
-            <View className="bg-card rounded-3xl overflow-hidden" style={{ boxShadow: '0 2px 12px rgba(217,140,154,0.12)' }}>
-              {/* 温柔安抚版 */}
-              <View
-                className="px-5 pt-4 pb-4 active:bg-primary-container"
-                onClick={() => handleCopy(result.gentleReply)}
-              >
-                <View className="flex flex-row items-center gap-2 mb-2">
-                  <View className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FDE2E4' }}>
-                    <MessageCircleHeart size={12} color="#D98C9A" />
-                  </View>
-                  <Text className="block text-xs font-bold text-primary">温柔安抚版</Text>
-                </View>
-                <Text className="block text-sm text-foreground leading-relaxed pl-8">{result.gentleReply}</Text>
-              </View>
-
-              <View className="mx-5 h-px bg-border" />
-
-              {/* 轻松互动版 */}
-              <View
-                className="px-5 pt-4 pb-4 active:bg-primary-container"
-                onClick={() => handleCopy(result.casualReply)}
-              >
-                <View className="flex flex-row items-center gap-2 mb-2">
-                  <View className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FFF1DE' }}>
-                    <Smile size={12} color="#D98C9A" />
-                  </View>
-                  <Text className="block text-xs font-bold text-warning">轻松互动版</Text>
-                </View>
-                <Text className="block text-sm text-foreground leading-relaxed pl-8">{result.casualReply}</Text>
-              </View>
-
-              <View className="mx-5 h-px bg-border" />
-
-              {/* 边界清晰版 */}
-              <View
-                className="px-5 pt-4 pb-4 active:bg-primary-container"
-                onClick={() => handleCopy(result.boundaryReply)}
-              >
-                <View className="flex flex-row items-center gap-2 mb-2">
-                  <View className="w-6 h-6 rounded-full flex items-center justify-center bg-muted">
-                    <ShieldCheck size={12} color="#7A8061" />
-                  </View>
-                  <Text className="block text-xs font-bold text-muted-foreground">边界清晰版</Text>
-                </View>
-                <Text className="block text-sm text-foreground leading-relaxed pl-8">{result.boundaryReply}</Text>
-              </View>
-            </View>
+        {/* ===== 底部原则提示 - 标签流 ===== */}
+        <View className="px-4 pb-6">
+          <View className="flex flex-row items-center gap-1 mb-2 px-1">
+            <Compass size={12} color="#D98C9A" />
+            <Text className="block text-xs text-muted-foreground">核心原则</Text>
           </View>
-        )}
-
-        {/* ===== 避雷提醒区 ===== */}
-        {result && (
-          <View className="px-5 pb-5">
-            <View className="rounded-3xl p-5" style={{ backgroundColor: '#FFF5F5', boxShadow: '0 2px 12px rgba(199,119,99,0.1)' }}>
-              <View className="flex flex-row items-center gap-2 mb-3">
-                <TriangleAlert size={16} color="#C77763" />
-                <Text className="block text-sm font-bold text-destructive">避雷提醒</Text>
-              </View>
-              {/* 不建议的回复 */}
-              <View className="bg-white bg-opacity-60 rounded-2xl p-3 mb-3">
-                <Text className="block text-xs text-muted-foreground mb-1">不建议这样回复：</Text>
-                <Text className="block text-sm text-foreground leading-relaxed line-through decoration-destructive">
-                  {result.badReply}
-                </Text>
-              </View>
-              {/* 为什么不建议 */}
-              <View className="flex flex-row items-start gap-2">
-                <Ban size={14} color="#C77763" />
-                <Text className="block text-sm text-destructive leading-relaxed">{result.badReason}</Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* ===== 底部原则提示 - 精简为标签流 ===== */}
-        <View className="px-5 pb-8">
-          <View className="flex flex-row items-center gap-2 mb-3 px-1">
-            <Compass size={14} color="#D98C9A" />
-            <Text className="block text-xs font-semibold text-muted-foreground">核心原则</Text>
-          </View>
-          <View className="flex flex-row flex-wrap gap-2">
+          <View className="flex flex-row flex-wrap gap-1">
             {PRINCIPLES.map((p, i) => (
-              <View key={i} className="inline-flex items-center px-3 py-1 rounded-full bg-card" style={{ boxShadow: '0 1px 4px rgba(217,140,154,0.08)' }}>
+              <View key={i} className="inline-flex items-center px-2 py-1 rounded-full bg-card" style={{ boxShadow: '0 1px 3px rgba(217,140,154,0.06)' }}>
                 <Text className="text-xs text-foreground">{p}</Text>
               </View>
             ))}
