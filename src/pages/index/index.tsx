@@ -185,7 +185,10 @@ const IndexPage = () => {
   return (
     <View className="flex flex-col min-h-screen bg-background">
       {/* Header */}
-      <View className="bg-background sticky top-0 z-40 px-4 pt-4 pb-2">
+      <View
+        className="bg-background sticky top-0 z-40 px-4 pb-2"
+        style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
+      >
         <View className="flex flex-row items-center justify-between">
           <View className="flex flex-row items-center gap-2">
             <MessageCircleHeart size={20} color="#D98C9A" />
@@ -206,7 +209,7 @@ const IndexPage = () => {
       {/* Scrollable Content */}
       <View className="flex-1 overflow-y-auto pb-6">
         {/* ===== 粉丝选择 ===== */}
-        <View className="px-4 pt-1 pb-1">
+        <View className="px-4 pt-2 pb-1">
           <View
             className="flex flex-row items-center justify-between rounded-xl px-3 py-2"
             style={{ backgroundColor: '#ffffff', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}

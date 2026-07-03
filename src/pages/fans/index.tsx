@@ -151,7 +151,10 @@ const IndexPage = () => {
   if (showEditor) {
     return (
       <View className="flex flex-col min-h-screen bg-background">
-        <View className="bg-background sticky top-0 z-40 px-4 pt-4 pb-2">
+        <View
+          className="bg-background sticky top-0 z-40 px-4 pb-2"
+          style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
+        >
           <View className="flex flex-row items-center justify-between">
             <View onClick={() => setShowEditor(false)} className="flex flex-row items-center gap-1">
               <ArrowLeft size={18} color="#7A8061" />
@@ -257,7 +260,10 @@ const IndexPage = () => {
   // 粉丝列表
   return (
     <View className="flex flex-col min-h-screen bg-background">
-      <View className="bg-background sticky top-0 z-40 px-4 pt-4 pb-2">
+      <View
+        className="bg-background sticky top-0 z-40 px-4 pb-2"
+        style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
+      >
         <View className="flex flex-row items-center justify-between">
           <View className="flex flex-row items-center gap-2">
             <Users size={20} color="#D98C9A" />
@@ -275,7 +281,7 @@ const IndexPage = () => {
         <Text className="block text-xs text-muted-foreground mt-1">管理粉丝档案，分析时自动带入记忆</Text>
       </View>
 
-      <View className="flex-1 overflow-y-auto px-4 pt-2 pb-6">
+      <View className="flex-1 overflow-y-auto px-4 pt-3 pb-6">
         {loading ? (
           <View className="flex items-center justify-center py-16">
             <Loader size={24} color="#D98C9A" className="animate-spin" />
