@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { View, Text } from '@tarojs/components'
-import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import Taro from '@tarojs/taro'
-import { Button } from '@/components/ui/button'
 import { Network } from '@/network'
 import {
   MessageCircleHeart,
@@ -123,51 +122,43 @@ const IndexPage = () => {
       <View className="flex-1 overflow-y-auto pb-8">
         {/* ===== 消息输入区 ===== */}
         <View className="px-5 pt-2 pb-5">
-          <View className="bg-card rounded-3xl p-5" style={{ boxShadow: '0 2px 12px rgba(217,140,154,0.12)' }}>
-            {/* 主输入框 */}
-            <Text className="block text-xs font-semibold text-muted-foreground mb-2">粉丝消息</Text>
-            <View className="bg-muted rounded-2xl px-4 py-3">
-              <Textarea
-                className="h-auto border-none bg-transparent ring-0 ring-offset-0 focus-within:ring-0 focus-within:border-none"
-                style={{ width: '100%', minHeight: '80px', backgroundColor: 'transparent', fontSize: '15px' }}
+          {/* 主输入框 - 胶囊型设计，输入与按钮一体 */}
+          <View className="flex flex-row items-center" style={{ backgroundColor: '#ffffff', borderRadius: '999px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', height: '52px', paddingLeft: '20px', paddingRight: '4px' }}>
+            <View style={{ flex: 1 }}>
+              <Input
+                className="border-none bg-transparent p-0 h-full shadow-none ring-0 focus-within:ring-0 focus-within:border-none rounded-none"
+                style={{ fontSize: '15px' }}
                 placeholder="粘贴粉丝发来的微信消息..."
+                placeholderClass="text-gray-400"
                 value={message}
                 onInput={(e) => setMessage(e.detail.value)}
                 maxlength={500}
               />
             </View>
-
-            {/* 补充背景输入框 */}
-            <Text className="block text-xs font-semibold text-muted-foreground mt-4 mb-2">补充背景（可选）</Text>
-            <View className="bg-muted rounded-2xl px-4 py-3">
-              <Textarea
-                className="h-auto border-none bg-transparent ring-0 ring-offset-0 focus-within:ring-0 focus-within:border-none"
-                style={{ width: '100%', minHeight: '44px', backgroundColor: 'transparent', fontSize: '13px' }}
-                placeholder="如「大R粉丝，月消费5k+」"
-                value={context}
-                onInput={(e) => setContext(e.detail.value)}
-                maxlength={200}
-              />
-            </View>
-
-            {/* 分析按钮 */}
-            <Button
-              className="w-full bg-primary text-primary-foreground mt-5 rounded-2xl h-12 text-base font-semibold"
+            <View
               onClick={handleAnalyze}
-              disabled={loading}
+              style={{ flexShrink: 0, backgroundColor: '#D98C9A', borderRadius: '999px', padding: '0 20px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: loading ? 0.7 : 1 }}
             >
               {loading ? (
-                <View className="flex flex-row items-center gap-2">
-                  <Loader size={18} color="#ffffff" className="animate-spin" />
-                  <Text className="text-primary-foreground text-base">分析中...</Text>
-                </View>
+                <Loader size={16} color="#ffffff" className="animate-spin" />
               ) : (
-                <View className="flex flex-row items-center gap-2">
-                  <Sparkles size={18} color="#ffffff" />
-                  <Text className="text-primary-foreground text-base font-semibold">分析消息</Text>
-                </View>
+                <Sparkles size={16} color="#ffffff" />
               )}
-            </Button>
+              <Text style={{ color: '#ffffff', fontSize: '14px', fontWeight: 600 }}>{loading ? '分析中' : '分析'}</Text>
+            </View>
+          </View>
+
+          {/* 补充背景输入框 - 同样胶囊型 */}
+          <View className="mt-3 flex flex-row items-center" style={{ backgroundColor: '#ffffff', borderRadius: '999px', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', height: '44px', paddingLeft: '20px' }}>
+            <Input
+              className="border-none bg-transparent p-0 h-full shadow-none ring-0 focus-within:ring-0 focus-within:border-none rounded-none"
+              style={{ fontSize: '13px' }}
+              placeholder="补充粉丝背景（可选）"
+              placeholderClass="text-gray-400"
+              value={context}
+              onInput={(e) => setContext(e.detail.value)}
+              maxlength={200}
+            />
           </View>
         </View>
 
