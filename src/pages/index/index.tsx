@@ -76,8 +76,14 @@ const PRINCIPLES = [
 ]
 
 /** 安全区顶部高度 */
-const STATUS_BAR_HEIGHT = (() => {
-  try { return Taro.getSystemInfoSync().statusBarHeight || 0 } catch { return 0 }
+/** 安全区顶部高度（状态栏 + 胶囊按钮区域 + 间距） */
+const HEADER_TOP_PADDING = (() => {
+  try {
+    const sysInfo = Taro.getSystemInfoSync()
+    const statusBarH = sysInfo.statusBarHeight || 0
+    const capsuleHeight = 40
+    return statusBarH + capsuleHeight + 8
+  } catch { return 60 }
 })()
 
 const IndexPage = () => {
@@ -191,7 +197,7 @@ const IndexPage = () => {
       {/* Header - 便签式标题区 */}
       <View
         className="px-5 pb-3"
-        style={{ paddingTop: `${STATUS_BAR_HEIGHT + 12}px` }}
+        style={{ paddingTop: `${HEADER_TOP_PADDING}px` }}
       >
         <View className="flex flex-row items-center justify-between">
           <View className="flex flex-row items-center gap-2">

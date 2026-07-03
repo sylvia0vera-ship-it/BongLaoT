@@ -18,9 +18,15 @@ import {
   StickyNote,
 } from 'lucide-react-taro'
 
-/** 安全区顶部高度 */
-const STATUS_BAR_HEIGHT = (() => {
-  try { return Taro.getSystemInfoSync().statusBarHeight || 0 } catch { return 0 }
+/** 安全区顶部高度（状态栏 + 胶囊按钮区域 + 间距） */
+const HEADER_TOP_PADDING = (() => {
+  try {
+    const sysInfo = Taro.getSystemInfoSync()
+    const statusBarH = sysInfo.statusBarHeight || 0
+    // 微信胶囊按钮高度约32px，加上底部间距8px
+    const capsuleHeight = 40
+    return statusBarH + capsuleHeight + 8
+  } catch { return 60 }
 })()
 
 /** 粉丝档案类型 */
@@ -160,7 +166,7 @@ const IndexPage = () => {
       <View className="flex flex-col min-h-screen" style={{ backgroundColor: '#F8EDEB' }}>
         <View
           className="px-5 pb-3"
-          style={{ paddingTop: `${STATUS_BAR_HEIGHT + 12}px` }}
+          style={{ paddingTop: `${HEADER_TOP_PADDING}px` }}
         >
           <View className="flex flex-row items-center justify-between">
             <View onClick={() => setShowEditor(false)} className="flex flex-row items-center gap-1">
@@ -277,7 +283,7 @@ const IndexPage = () => {
     <View className="flex flex-col min-h-screen" style={{ backgroundColor: '#F8EDEB' }}>
       <View
         className="px-5 pb-3"
-        style={{ paddingTop: `${STATUS_BAR_HEIGHT + 12}px` }}
+        style={{ paddingTop: `${HEADER_TOP_PADDING}px` }}
       >
         <View className="flex flex-row items-center justify-between">
           <View className="flex flex-row items-center gap-2">
