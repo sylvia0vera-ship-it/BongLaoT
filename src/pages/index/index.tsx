@@ -3,7 +3,7 @@ import { View, Text, Image } from '@tarojs/components'
 import { Input } from '@/components/ui/input'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { BookHeart, ImagePlus, X, Users, Sparkles } from 'lucide-react-taro'
+import { BookHeart, ImagePlus, X, Users, Sparkles, MapPin } from 'lucide-react-taro'
 
 const STATUS_BAR_HEIGHT = Taro.getSystemInfoSync().statusBarHeight || 0
 const HEADER_TOP = STATUS_BAR_HEIGHT + 40 + 8
@@ -32,6 +32,10 @@ export default function Index() {
   const [context, setContext] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [imagePreview, setImagePreview] = useState('')
+  // 位置搜索
+  const [locationQuery, setLocationQuery] = useState('')
+  const [locationResults, setLocationResults] = useState<any>(null)
+  const [locationLoading, setLocationLoading] = useState(false)
   // 粉丝
   const [fans, setFans] = useState<any[]>([])
   const [selectedFanId, setSelectedFanId] = useState('')
@@ -63,6 +67,27 @@ export default function Index() {
     } catch (e) {
       console.error('图片上传失败', e)
       Taro.showToast({ title: '上传失败', icon: 'none' })
+    }
+  }
+
+  const handleLocationSearch = async () => {
+    if (!locationQuery.trim()) return
+    setLocationLoading(true)
+    setLocationResults(null)
+    try {
+      const res = await Network.request({
+        url: '/api/location/search',
+        method: 'POST',
+        data: { query: locationQuery.trim() }
+      })
+      console.log('[LocationSearch] response:', res.data)
+      const data = res.data?.data?.data || res.data?.data || res.data
+      setLocationResults(data)
+    } catch (e) {
+      console.error('[LocationSearch] error:', e)
+      Taro.showToast({ title: '搜索失败', icon: 'none' })
+    } finally {
+      setLocationLoading(false)
     }
   }
 
@@ -409,13 +434,85 @@ export default function Index() {
       )}
 
       {/* 底部原则 */}
-      <View style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: 20 }}>
+      <View style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: 12 }}>
         <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 4, justifyContent: 'center' }}>
           {['可撒娇可暧昧', '人设内亲密', '不承诺现实', '不PUA不卖惨', '轻松引导互动'].map(t => (
             <View key={t} style={{ padding: '2px 8px', borderRadius: 10, borderWidth: 1, borderColor: '#E8C9C4', borderStyle: 'dashed' }}>
               <Text className="block text-xs" style={{ color: '#7A8061' }}>{t}</Text>
             </View>
           ))}
+        </View>
+      </View>
+
+      {/* 地点搜索 - 找附近特产&景点 */}
+      <View style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: 20 }}>
+        <View style={{ backgroundColor: '#FFF7F2', borderRadius: 16, padding: 12 }}>
+          <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <MapPin size={14} color="#C77763" />
+            <Text className="block text-xs font-medium" style={{ color: '#C77763' }}>找附近特产&景点</Text>
+          </View>
+          <View style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+            <View style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 20, paddingLeft: 12, paddingRight: 12, paddingTop: 6, paddingBottom: 6 }}>
+              <Input
+                style={{ width: '100%', fontSize: 13, color: '#2F2523' }}
+                placeholder="输入地名，如：成都、厦门、大理…"
+                placeholderStyle="color: #C77763"
+                value={locationQuery}
+                onInput={(e: any) => setLocationQuery(e.detail.value)}
+                onConfirm={() => handleLocationSearch()}
+              />
+            </View>
+            <View
+              style={{ backgroundColor: '#D98C9A', borderRadius: 20, paddingLeft: 10, paddingRight: 10, paddingTop: 6, paddingBottom: 6 }}
+              onClick={() => handleLocationSearch()}
+            >
+              <Text className="block text-xs text-white">搜索</Text>
+            </View>
+          </View>
+          {locationLoading && (
+            <View style={{ marginTop: 8, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Text className="block text-xs" style={{ color: '#7A8061' }}>正在搜索…</Text>
+            </View>
+          )}
+          {locationResults && (
+            <View style={{ marginTop: 8 }}>
+              {locationResults.specialties && locationResults.specialties.length > 0 && (
+                <View style={{ marginBottom: 6 }}>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#A85D6A' }}>当地特产</Text>
+                  <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+                    {locationResults.specialties.map((s: string, i: number) => (
+                      <View key={i} style={{ backgroundColor: '#FDE2E4', borderRadius: 10, paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }}>
+                        <Text className="block text-xs" style={{ color: '#A85D6A' }}>{s}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              {locationResults.attractions && locationResults.attractions.length > 0 && (
+                <View style={{ marginBottom: 6 }}>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#C77763' }}>附近景点</Text>
+                  {locationResults.attractions.map((a: any, i: number) => (
+                    <View key={i} style={{ backgroundColor: '#FFFFFF', borderRadius: 8, padding: 6, marginTop: 4 }}>
+                      <Text className="block text-xs font-medium" style={{ color: '#2F2523' }}>{a.name}</Text>
+                      {a.description && <Text className="block text-xs mt-1" style={{ color: '#7A8061' }}>{a.description}</Text>}
+                    </View>
+                  ))}
+                </View>
+              )}
+              {locationResults.chatTopics && locationResults.chatTopics.length > 0 && (
+                <View>
+                  <Text className="block text-xs font-medium mb-1" style={{ color: '#7A8061' }}>聊天话题灵感</Text>
+                  <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+                    {locationResults.chatTopics.map((t: string, i: number) => (
+                      <View key={i} style={{ backgroundColor: '#FFF1DE', borderRadius: 10, paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2 }}>
+                        <Text className="block text-xs" style={{ color: '#C77763' }}>{t}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </View>
     </View>
