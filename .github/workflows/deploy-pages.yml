@@ -21,10 +21,19 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
+<<<<<<< HEAD
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+=======
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+>>>>>>> 06f6535 (ci: 添加 GitHub Pages 部署配置指引)
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
