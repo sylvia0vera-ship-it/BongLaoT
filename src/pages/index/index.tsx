@@ -20,14 +20,13 @@ const PERSONA_OPTIONS = [
 
 /** 工作流模式 */
 const MODE_OPTIONS = [
-  { key: 'pre-chat', label: '聊前准备', icon: '📋' },
   { key: 'mid-chat', label: '聊中回复', icon: '💬' },
   { key: 'post-chat', label: '聊后复盘', icon: '📝' },
 ]
 
 export default function Index() {
   // 工作流模式
-  const [chatMode, setChatMode] = useState<'pre-chat' | 'mid-chat' | 'post-chat'>('mid-chat')
+  const [chatMode, setChatMode] = useState<'mid-chat' | 'post-chat'>('mid-chat')
   // 输入
   const [message, setMessage] = useState('')
   const [context, setContext] = useState('')
@@ -68,7 +67,7 @@ export default function Index() {
   }
 
   const handleAnalyze = async () => {
-    if (!message.trim() && chatMode !== 'pre-chat') {
+    if (!message.trim()) {
       Taro.showToast({ title: '请输入消息内容', icon: 'none' })
       return
     }
@@ -196,7 +195,7 @@ export default function Index() {
           <View style={{ backgroundColor: '#FFFFFF', borderRadius: 12, padding: '8px 12px' }}>
             <Input
               style={{ width: '100%', fontSize: '14px' }}
-              placeholder={chatMode === 'pre-chat' ? '聊前准备不需要输入消息...' : chatMode === 'post-chat' ? '粘贴本轮聊天内容...' : '粘贴粉丝发来的消息...'}
+              placeholder={chatMode === 'post-chat' ? '粘贴本轮聊天内容...' : '粘贴粉丝发来的消息...'}
               value={message}
               onInput={(e: any) => setMessage(e.detail.value)}
             />
@@ -248,7 +247,7 @@ export default function Index() {
             <>
               <Sparkles size={14} color="#FFFFFF" />
               <Text className="block text-sm text-white font-medium">
-                {chatMode === 'pre-chat' ? '生成聊前准备' : chatMode === 'post-chat' ? '生成聊后复盘' : '帮我想想怎么回'}
+                {chatMode === 'post-chat' ? '生成聊后复盘' : '帮我想想怎么回'}
               </Text>
             </>
           )}
@@ -258,58 +257,6 @@ export default function Index() {
       {/* 结果区 */}
       {result && (
         <View style={{ marginLeft: 12, marginRight: 12, marginBottom: 12 }}>
-          {/* === 聊前准备 === */}
-          {chatMode === 'pre-chat' && (
-            <View style={{ borderRadius: 16, backgroundColor: '#FFFFFF', padding: 12, borderWidth: 1, borderColor: '#E8C9C4' }}>
-              {/* 关系阶段 + 目标 */}
-              <View style={{ display: 'flex', flexDirection: 'row', gap: 6, marginBottom: 8 }}>
-                <View style={{ padding: '3px 8px', borderRadius: 8, backgroundColor: '#FDE2E4' }}>
-                  <Text className="block text-xs font-medium" style={{ color: '#A85D6A' }}>{result.relationshipStage || '普通互动'}</Text>
-                </View>
-                <View style={{ padding: '3px 8px', borderRadius: 8, backgroundColor: '#FFF1DE' }}>
-                  <Text className="block text-xs" style={{ color: '#C77763' }}>{result.dailyGoal || ''}</Text>
-                </View>
-              </View>
-
-              {/* 开场白 */}
-              {result.openers && result.openers.length > 0 && (
-                <View style={{ marginBottom: 8 }}>
-                  <Text className="block text-xs font-medium mb-1" style={{ color: '#2F2523' }}>💡 开场白建议</Text>
-                  {result.openers.map((o: string, i: number) => (
-                    <View key={i} style={{ padding: '4px 8px', borderRadius: 8, backgroundColor: '#FFF7F2', marginBottom: 4 }}>
-                      <Text className="block text-xs" style={{ color: '#2F2523' }}>{o}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* 前5句破冰 */}
-              {result.iceBreaker && (
-                <View style={{ marginBottom: 8 }}>
-                  <Text className="block text-xs font-medium mb-1" style={{ color: '#2F2523' }}>🔥 前5句破冰</Text>
-                  {Object.entries(result.iceBreaker).map(([k, v]) => (
-                    <View key={k} style={{ display: 'flex', flexDirection: 'row', gap: 4, marginBottom: 3, alignItems: 'flex-start' }}>
-                      <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: '#D98C9A', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 }}>
-                        <Text className="block text-white" style={{ fontSize: 9, lineHeight: '16px' }}>{k}</Text>
-                      </View>
-                      <Text className="block text-xs" style={{ color: '#2F2523', flex: 1 }}>{v as string}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* 注意事项 */}
-              {result.precautions && result.precautions.length > 0 && (
-                <View>
-                  <Text className="block text-xs font-medium mb-1" style={{ color: '#C77763' }}>⚠️ 注意</Text>
-                  {result.precautions.map((p: string, i: number) => (
-                    <Text key={i} className="block text-xs" style={{ color: '#7A8061' }}>• {p}</Text>
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
-
           {/* === 聊中回复 === */}
           {chatMode === 'mid-chat' && (
             <View style={{ borderRadius: 16, backgroundColor: '#FFFFFF', padding: 12, borderWidth: 1, borderColor: '#E8C9C4' }}>
