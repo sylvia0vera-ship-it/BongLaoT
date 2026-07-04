@@ -23,12 +23,9 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v4
-- 使用: actions/setup-node@v4
         with:
-提供:
           node-version: 22
           cache: pnpm
-缓存: pnpm”
 
       - run: pnpm install --frozen-lockfile
 
@@ -36,7 +33,6 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v3
         with:
-提供:
           path: dist-web
 
   deploy:
