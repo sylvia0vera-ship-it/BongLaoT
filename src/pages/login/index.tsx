@@ -156,7 +156,7 @@ export default function Login() {
 
       {/* 底部装饰 */}
       <View className="flex justify-center mt-10">
-        <Text className="block text-xs" style={{ color: '#C4A09A' }}>温柔手作风 · 让每一次回复都有温度</Text>
+        <Text className="block text-xs" style={{ color: '#C4A09A' }}>让每一次回复都有温度</Text>
       </View>
     </View>
   )
