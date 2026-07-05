@@ -5,9 +5,10 @@ import { AnalyzeModule } from './analyze/analyze.module';
 import { FansModule } from './fans/fans.module';
 import { UploadModule } from './upload/upload.module';
 import { LocationModule } from './location/location.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [AnalyzeModule, FansModule, UploadModule, LocationModule],
+  imports: [AnalyzeModule, FansModule, UploadModule, LocationModule, AuthModule],
   controllers: [AppController],
   providers: [AppService],
 })

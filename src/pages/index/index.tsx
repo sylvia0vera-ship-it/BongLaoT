@@ -3,7 +3,7 @@ import { View, Text, Image } from '@tarojs/components'
 import { Input } from '@/components/ui/input'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { BookHeart, ImagePlus, X, Users, Sparkles, MapPin } from 'lucide-react-taro'
+import { BookHeart, ImagePlus, X, Sparkles, MapPin, LogOut } from 'lucide-react-taro'
 
 const STATUS_BAR_HEIGHT = Taro.getSystemInfoSync().statusBarHeight || 0
 const HEADER_TOP = STATUS_BAR_HEIGHT + 40 + 8
@@ -25,6 +25,9 @@ const MODE_OPTIONS = [
 ]
 
 export default function Index() {
+  // 登录态
+  const [userInfo, setUserInfo] = useState<any>(null)
+
   // 工作流模式
   const [chatMode, setChatMode] = useState<'mid-chat' | 'post-chat'>('mid-chat')
   // 输入
@@ -45,7 +48,16 @@ export default function Index() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
 
-  useEffect(() => { loadFans() }, [])
+  useEffect(() => {
+    // 检查登录态
+    const info = Taro.getStorageSync('userInfo')
+    if (!info) {
+      Taro.navigateTo({ url: '/pages/login/index' })
+      return
+    }
+    setUserInfo(info)
+    loadFans()
+  }, [])
 
   const loadFans = async () => {
     try {
@@ -140,7 +152,6 @@ export default function Index() {
     }
   }
 
-  const goFans = () => Taro.navigateTo({ url: '/pages/fans/index' })
 
   return (
     <View className="min-h-screen" style={{ backgroundColor: '#F8EDEB' }}>
@@ -150,9 +161,14 @@ export default function Index() {
           <BookHeart size={22} color="#A85D6A" />
           <Text className="block text-2xl font-bold" style={{ color: '#2F2523' }}>回复小助手</Text>
         </View>
-        <View onClick={goFans} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#E8C9C4' }}>
-          <Users size={14} color="#A85D6A" />
-          <Text className="block text-xs" style={{ color: '#A85D6A' }}>粉丝</Text>
+        <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {userInfo && (
+            <Text className="block text-xs" style={{ color: '#A85D6A' }}>{userInfo.nickname || userInfo.username}</Text>
+          )}
+          <View onClick={() => { Taro.removeStorageSync('userInfo'); Taro.removeStorageSync('token'); Taro.navigateTo({ url: '/pages/login/index' }) }} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#E8C9C4' }}>
+            <LogOut size={14} color="#A85D6A" />
+            <Text className="block text-xs" style={{ color: '#A85D6A' }}>退出</Text>
+          </View>
         </View>
       </View>
 

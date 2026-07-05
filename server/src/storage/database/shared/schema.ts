@@ -40,6 +40,22 @@ export const fans = pgTable(
   ]
 );
 
+export const users = pgTable(
+  "users",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    username: varchar("username", { length: 64 }).notNull().unique(),
+    password: varchar("password", { length: 256 }).notNull(),
+    nickname: varchar("nickname", { length: 64 }),
+    avatar_url: text("avatar_url"),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("users_username_idx").on(table.username),
+  ]
+);
+
 export const chatLogs = pgTable(
   "chat_logs",
   {
