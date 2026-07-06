@@ -4,6 +4,18 @@ import * as express from 'express';
 import { HttpStatusInterceptor } from '@/interceptors/http-status.interceptor';
 import { join } from 'node:path';
 
+// 加载 .env.local 环境变量（使用绝对路径确保运行时能找到）
+try {
+  const fs = require('fs');
+  const envPath = '/workspace/projects/.env.local';
+  if (fs.existsSync(envPath)) {
+    require('dotenv').config({ path: envPath });
+    console.log('[Env] Loaded .env.local, SENDER_QQ_EMAIL:', process.env.SENDER_QQ_EMAIL ? '✅' : '❌');
+  }
+} catch (e: any) {
+  console.warn('[Env] Failed to load .env.local:', e.message);
+}
+
 function parsePort(): number {
   const args = process.argv.slice(2);
   const portIndex = args.indexOf('-p');
