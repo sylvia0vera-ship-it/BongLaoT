@@ -10,7 +10,7 @@ const STATUS_BAR_HEIGHT = Taro.getSystemInfoSync().statusBarHeight || 0
 const HEADER_TOP = STATUS_BAR_HEIGHT + 40 + 8
 
 export default function Login() {
-  const [isRegister, setIsRegister] = useState(false)
+  const [isRegister, setIsRegister] = useState(true)
   const [qqNumber, setQqNumber] = useState('')
   const [verifyCode, setVerifyCode] = useState('')
   const [password, setPassword] = useState('')
@@ -178,52 +178,55 @@ export default function Login() {
         {/* QQ号 + @qq.com 后缀 */}
         <View className="mb-4">
           <Text className="block text-sm mb-2" style={{ color: '#A85D6A' }}>QQ邮箱</Text>
-          <View className="rounded-xl flex flex-row items-center" style={{ backgroundColor: '#F8EDEB' }}>
-            <View className="flex-1 px-4 py-3">
-              <Input
-                className="w-full bg-transparent"
-                type="number"
-                placeholder="请输入QQ号"
-                value={qqNumber}
-                onInput={(e) => setQqNumber(e.detail.value)}
-              />
-            </View>
-            <Text className="pr-4 text-sm" style={{ color: '#A85D6A' }}>@qq.com</Text>
-          </View>
-        </View>
-
-        {/* 注册时：验证码输入 + 发送按钮 */}
-        {isRegister && (
-          <View className="mb-4">
-            <Text className="block text-sm mb-2" style={{ color: '#A85D6A' }}>验证码</Text>
-            <View className="flex flex-row items-center gap-2">
-              <View className="flex-1 rounded-xl px-4 py-3" style={{ backgroundColor: '#F8EDEB' }}>
+          <View className="flex flex-row items-center gap-2">
+            <View className="flex-1 rounded-xl flex flex-row items-center" style={{ backgroundColor: '#F8EDEB' }}>
+              <View className="flex-1 px-4 py-3">
                 <Input
                   className="w-full bg-transparent"
                   type="number"
-                  placeholder="6位验证码"
-                  value={verifyCode}
-                  onInput={(e) => setVerifyCode(e.detail.value)}
+                  placeholder="请输入QQ号"
+                  value={qqNumber}
+                  onInput={(e) => setQqNumber(e.detail.value)}
                 />
               </View>
+              <Text className="pr-4 text-sm shrink-0" style={{ color: '#A85D6A' }}>@qq.com</Text>
+            </View>
+            {/* 注册时：获取验证码按钮紧跟QQ号 */}
+            {isRegister && (
               <Button
-                className="rounded-xl px-4 py-3 text-sm shrink-0"
+                className="rounded-xl px-3 py-3 text-sm shrink-0"
                 style={{
                   backgroundColor: countdown > 0 ? '#E8C9C4' : '#D98C9A',
                   color: '#fff',
-                  minWidth: '90px',
+                  minWidth: '80px',
                 }}
                 onClick={handleSendCode}
                 disabled={countdown > 0 || loading}
               >
-                <Text className="text-white text-sm">
-                  {countdown > 0 ? `${countdown}s` : (codeSent ? '重新发送' : '获取验证码')}
+                <Text className="text-white text-xs">
+                  {countdown > 0 ? `${countdown}s` : (codeSent ? '重发' : '获取验证码')}
                 </Text>
               </Button>
+            )}
+          </View>
+        </View>
+
+        {/* 注册时：验证码输入 */}
+        {isRegister && (
+          <View className="mb-4">
+            <Text className="block text-sm mb-2" style={{ color: '#A85D6A' }}>验证码</Text>
+            <View className="rounded-xl px-4 py-3" style={{ backgroundColor: '#F8EDEB' }}>
+              <Input
+                className="w-full bg-transparent"
+                type="number"
+                placeholder="请输入6位验证码"
+                value={verifyCode}
+                onInput={(e) => setVerifyCode(e.detail.value)}
+              />
             </View>
             {codeSent && (
               <Text className="block text-xs mt-1" style={{ color: '#C4A09A' }}>
-                验证码已发送至 {qqNumber}@qq.com
+                验证码已发送至 {qqNumber}@qq.com，请查收邮件
               </Text>
             )}
           </View>
