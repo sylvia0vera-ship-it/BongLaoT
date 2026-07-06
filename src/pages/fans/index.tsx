@@ -334,7 +334,14 @@ const IndexPage = () => {
               const stageStyle = getStageStyle(fan.relationship_stage)
               const tagList = fan.tags ? fan.tags.split(',').map(t => t.trim()).filter(Boolean) : []
               return (
-                <View key={fan.id} style={{ borderRadius: 16, paddingLeft: 14, paddingRight: 14, paddingTop: 10, paddingBottom: 10, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8C9C4', borderStyle: 'dashed' }}>
+                <View
+                  key={fan.id}
+                  onClick={() => {
+                    Taro.setStorageSync('selectedFanId', fan.id)
+                    Taro.switchTab({ url: '/pages/index/index' })
+                  }}
+                  style={{ borderRadius: 16, paddingLeft: 14, paddingRight: 14, paddingTop: 10, paddingBottom: 10, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8C9C4', borderStyle: 'dashed' }}
+                >
                   <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
                       <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: stageStyle.bg, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -353,10 +360,10 @@ const IndexPage = () => {
                       </View>
                     </View>
                     <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <View onClick={() => openEditFan(fan)} style={{ width: 26, height: 26, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: 13, backgroundColor: '#FFF7F2' }}>
+                      <View onClick={(e) => { e.stopPropagation(); openEditFan(fan) }} style={{ width: 26, height: 26, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: 13, backgroundColor: '#FFF7F2' }}>
                         <PenLine size={12} color="#7A8061" />
                       </View>
-                      <View onClick={() => handleDelete(fan.id)} style={{ width: 26, height: 26, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: 13, backgroundColor: '#FDE8E8' }}>
+                      <View onClick={(e) => { e.stopPropagation(); handleDelete(fan.id) }} style={{ width: 26, height: 26, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: 13, backgroundColor: '#FDE8E8' }}>
                         <Trash2 size={12} color="#B55A5A" />
                       </View>
                     </View>

@@ -56,13 +56,22 @@ export default function Index() {
       return
     }
     setUserInfo(info)
+    // 恢复粉丝页传来的选中状态
+    const preSelectedFanId = Taro.getStorageSync('selectedFanId')
+    if (preSelectedFanId) {
+      setSelectedFanId(preSelectedFanId)
+      Taro.removeStorageSync('selectedFanId')
+    }
     loadFans()
   }, [])
 
   const loadFans = async () => {
     try {
       const res = await Network.request({ url: '/api/fans' })
-      setFans(res.data.data || [])
+      console.log('粉丝列表响应:', JSON.stringify(res.data))
+      const list = res.data?.data || []
+      setFans(list)
+      console.log('粉丝数量:', list.length)
     } catch (e) { console.error('加载粉丝失败', e) }
   }
 
@@ -196,23 +205,29 @@ export default function Index() {
         {/* 粉丝选择 */}
         <View style={{ marginBottom: 8 }}>
           <Text className="block text-xs mb-1" style={{ color: '#7A8061' }}>选择粉丝</Text>
-          <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-            <View
-              onClick={() => setSelectedFanId('')}
-              style={{ padding: '3px 10px', borderRadius: 12, borderWidth: 1, borderColor: selectedFanId ? '#E8C9C4' : '#D98C9A', backgroundColor: selectedFanId ? '#FFFFFF' : '#D98C9A' }}
-            >
-              <Text className="block text-xs" style={{ color: selectedFanId ? '#2F2523' : '#FFFFFF' }}>未选择</Text>
+          {fans.length === 0 ? (
+            <View onClick={() => Taro.switchTab({ url: '/pages/fans/index' })} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 12, backgroundColor: '#FFF1DE', borderWidth: 1, borderColor: '#E8C9C4', borderStyle: 'dashed' }}>
+              <Text className="block text-xs" style={{ color: '#C77763' }}>暂无粉丝，点击去添加 →</Text>
             </View>
-            {fans.map((f: any) => (
+          ) : (
+            <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
               <View
-                key={f.id}
-                onClick={() => setSelectedFanId(f.id)}
-                style={{ padding: '3px 10px', borderRadius: 12, borderWidth: 1, borderColor: selectedFanId === f.id ? '#D98C9A' : '#E8C9C4', backgroundColor: selectedFanId === f.id ? '#D98C9A' : '#FFFFFF' }}
+                onClick={() => { console.log('点击未选择'); setSelectedFanId('') }}
+                style={{ padding: '6px 14px', borderRadius: 14, borderWidth: 1.5, borderColor: selectedFanId ? '#E8C9C4' : '#D98C9A', backgroundColor: selectedFanId ? '#FFFFFF' : '#D98C9A' }}
               >
-                <Text className="block text-xs" style={{ color: selectedFanId === f.id ? '#FFFFFF' : '#2F2523' }}>{f.name}</Text>
+                <Text className="block text-xs font-bold" style={{ color: selectedFanId ? '#2F2523' : '#FFFFFF' }}>未选择</Text>
               </View>
-            ))}
-          </View>
+              {fans.map((f: any) => (
+                <View
+                  key={f.id}
+                  onClick={() => { console.log('点击粉丝:', f.name, f.id); setSelectedFanId(f.id) }}
+                  style={{ padding: '6px 14px', borderRadius: 14, borderWidth: 1.5, borderColor: selectedFanId === f.id ? '#D98C9A' : '#E8C9C4', backgroundColor: selectedFanId === f.id ? '#D98C9A' : '#FFFFFF' }}
+                >
+                  <Text className="block text-xs font-bold" style={{ color: selectedFanId === f.id ? '#FFFFFF' : '#2F2523' }}>{f.name}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* 人设选择 */}
