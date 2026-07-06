@@ -5,14 +5,23 @@ import { AuthService } from './auth.service'
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  /** 注册 */
+  /** 发送验证码 */
+  @Post('send-code')
+  @HttpCode(200)
+  async sendCode(@Body() body: { email: string }) {
+    console.log('[Auth] POST /api/auth/send-code', { email: body.email })
+    await this.authService.sendCode(body.email)
+    return { code: 200, msg: '验证码已发送' }
+  }
+
+  /** 注册（带验证码） */
   @Post('register')
   @HttpCode(200)
   async register(
-    @Body() body: { email: string; password: string; nickname?: string }
+    @Body() body: { email: string; password: string; code: string; nickname?: string }
   ) {
     console.log('[Auth] POST /api/auth/register', { email: body.email })
-    const result = await this.authService.register(body.email, body.password, body.nickname)
+    const result = await this.authService.register(body.email, body.password, body.code, body.nickname)
     console.log('[Auth] 注册成功', { userId: result.user.id })
     return { code: 200, msg: '注册成功', data: result }
   }

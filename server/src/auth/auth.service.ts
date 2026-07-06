@@ -1,10 +1,13 @@
 import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common'
 import { getSupabaseClient } from '../storage/database/supabase-client'
+import { EmailService } from './email.service'
 import * as crypto from 'crypto'
 
 @Injectable()
 export class AuthService {
   private supabase = getSupabaseClient()
+
+  constructor(private readonly emailService: EmailService) {}
 
   /** 密码哈希 */
   private hashPassword(password: string): string {
@@ -17,8 +20,32 @@ export class AuthService {
     return Buffer.from(payload).toString('base64')
   }
 
-  /** 注册 */
-  async register(email: string, password: string, nickname?: string) {
+  /** 发送验证码 */
+  async sendCode(email: string) {
+    if (!email || !email.endsWith('@qq.com')) {
+      throw new BadRequestException('请使用QQ邮箱')
+    }
+    const emailPrefix = email.replace('@qq.com', '')
+    if (!/^\d{5,11}$/.test(emailPrefix)) {
+      throw new BadRequestException('QQ号格式不正确')
+    }
+
+    // 检查邮箱是否已注册
+    const { data: existing } = await this.supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
+
+    if (existing) {
+      throw new BadRequestException('该QQ邮箱已注册，请直接登录')
+    }
+
+    await this.emailService.sendVerificationCode(email)
+  }
+
+  /** 注册（需先验证码验证） */
+  async register(email: string, password: string, code: string, nickname?: string) {
     if (!email || !email.endsWith('@qq.com')) {
       throw new BadRequestException('请使用QQ邮箱注册')
     }
@@ -28,6 +55,12 @@ export class AuthService {
     }
     if (!password || password.length < 6) {
       throw new BadRequestException('密码至少6个字符')
+    }
+
+    // 验证验证码
+    const isValid = this.emailService.verifyCode(email, code)
+    if (!isValid) {
+      throw new BadRequestException('验证码错误或已过期')
     }
 
     // 检查邮箱是否已存在
@@ -86,7 +119,7 @@ export class AuthService {
   async getProfile(userId: string) {
     const { data, error } = await this.supabase
       .from('users')
-      .select('id, username, nickname, avatar_url, created_at')
+      .select('id, email, username, nickname, avatar_url, created_at')
       .eq('id', userId)
       .single()
 
@@ -103,7 +136,7 @@ export class AuthService {
       .from('users')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', userId)
-      .select('id, username, nickname, avatar_url, created_at')
+      .select('id, email, username, nickname, avatar_url, created_at')
       .single()
 
     if (error) throw new BadRequestException('更新失败：' + error.message)

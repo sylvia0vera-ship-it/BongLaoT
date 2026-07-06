@@ -12,15 +12,74 @@ const HEADER_TOP = STATUS_BAR_HEIGHT + 40 + 8
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false)
   const [qqNumber, setQqNumber] = useState('')
+  const [verifyCode, setVerifyCode] = useState('')
   const [password, setPassword] = useState('')
   const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // 验证码倒计时
+  const [countdown, setCountdown] = useState(0)
+  const [codeSent, setCodeSent] = useState(false)
+
+  /** 发送验证码 */
+  const handleSendCode = async () => {
+    if (!qqNumber.trim() || !/^\d{5,11}$/.test(qqNumber.trim())) {
+      Taro.showToast({ title: '请输入正确的QQ号', icon: 'none' })
+      return
+    }
+
+    setLoading(true)
+    try {
+      const email = qqNumber.trim() + '@qq.com'
+      console.log('[Login] POST /api/auth/send-code', { email })
+      const res = await Network.request({
+        url: '/api/auth/send-code',
+        method: 'POST',
+        data: { email },
+      })
+      console.log('[Login] send-code response:', res.data)
+
+      if (res.data?.code === 200) {
+        setCodeSent(true)
+        Taro.showToast({ title: '验证码已发送', icon: 'success' })
+
+        // 60秒倒计时
+        setCountdown(60)
+        const timer = setInterval(() => {
+          setCountdown(prev => {
+            if (prev <= 1) {
+              clearInterval(timer)
+              return 0
+            }
+            return prev - 1
+          })
+        }, 1000)
+      } else {
+        Taro.showToast({ title: res.data?.msg || '发送失败', icon: 'none' })
+      }
+    } catch (err: any) {
+      console.log('[Login] send-code error:', err)
+      const msg = err?.data?.message || err?.message || '发送失败'
+      Taro.showToast({ title: msg, icon: 'none' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /** 提交（登录或注册） */
   const handleSubmit = async () => {
     if (!qqNumber.trim() || !/^\d{5,11}$/.test(qqNumber.trim())) {
       Taro.showToast({ title: '请输入正确的QQ号', icon: 'none' })
       return
     }
+
+    if (isRegister) {
+      if (!verifyCode.trim()) {
+        Taro.showToast({ title: '请输入验证码', icon: 'none' })
+        return
+      }
+    }
+
     if (!password.trim() || password.length < 6) {
       Taro.showToast({ title: '密码至少6位', icon: 'none' })
       return
@@ -29,37 +88,57 @@ export default function Login() {
     const email = qqNumber.trim() + '@qq.com'
     setLoading(true)
     try {
-      const url = isRegister ? '/api/auth/register' : '/api/auth/login'
-      const data: Record<string, string> = { email, password }
-      if (isRegister && nickname.trim()) {
-        data.nickname = nickname.trim()
-      }
+      if (isRegister) {
+        // 注册（带验证码）
+        const data: Record<string, string> = {
+          email,
+          password,
+          code: verifyCode.trim(),
+        }
+        if (nickname.trim()) {
+          data.nickname = nickname.trim()
+        }
 
-      console.log('[Login] POST', url, { email })
-      const res = await Network.request({
-        url,
-        method: 'POST',
-        data,
-      })
-      console.log('[Login] Response:', res.data)
-
-      const result = res.data?.data || res.data
-
-      if (result?.user && result?.token) {
-        // 保存登录态
-        Taro.setStorageSync('userInfo', result.user)
-        Taro.setStorageSync('token', result.token)
-
-        Taro.showToast({
-          title: isRegister ? '注册成功' : '登录成功',
-          icon: 'success',
+        console.log('[Login] POST /api/auth/register', { email })
+        const res = await Network.request({
+          url: '/api/auth/register',
+          method: 'POST',
+          data,
         })
+        console.log('[Login] register response:', res.data)
 
-        setTimeout(() => {
-          Taro.switchTab({ url: '/pages/index/index' })
-        }, 500)
+        const result = res.data?.data || res.data
+        if (result?.user && result?.token) {
+          Taro.setStorageSync('userInfo', result.user)
+          Taro.setStorageSync('token', result.token)
+          Taro.showToast({ title: '注册成功', icon: 'success' })
+          setTimeout(() => {
+            Taro.switchTab({ url: '/pages/index/index' })
+          }, 500)
+        } else {
+          Taro.showToast({ title: res.data?.msg || '注册失败', icon: 'none' })
+        }
       } else {
-        Taro.showToast({ title: '操作失败，请重试', icon: 'none' })
+        // 登录
+        console.log('[Login] POST /api/auth/login', { email })
+        const res = await Network.request({
+          url: '/api/auth/login',
+          method: 'POST',
+          data: { email, password },
+        })
+        console.log('[Login] login response:', res.data)
+
+        const result = res.data?.data || res.data
+        if (result?.user && result?.token) {
+          Taro.setStorageSync('userInfo', result.user)
+          Taro.setStorageSync('token', result.token)
+          Taro.showToast({ title: '登录成功', icon: 'success' })
+          setTimeout(() => {
+            Taro.switchTab({ url: '/pages/index/index' })
+          }, 500)
+        } else {
+          Taro.showToast({ title: '登录失败，请重试', icon: 'none' })
+        }
       }
     } catch (err: any) {
       console.log('[Login] Error:', err)
@@ -104,6 +183,43 @@ export default function Login() {
             <Text className="pr-4 text-sm" style={{ color: '#A85D6A' }}>@qq.com</Text>
           </View>
         </View>
+
+        {/* 注册时：验证码输入 + 发送按钮 */}
+        {isRegister && (
+          <View className="mb-4">
+            <Text className="block text-sm mb-2" style={{ color: '#A85D6A' }}>验证码</Text>
+            <View className="flex flex-row items-center gap-2">
+              <View className="flex-1 rounded-xl px-4 py-3" style={{ backgroundColor: '#F8EDEB' }}>
+                <Input
+                  className="w-full bg-transparent"
+                  type="number"
+                  placeholder="6位验证码"
+                  value={verifyCode}
+                  onInput={(e) => setVerifyCode(e.detail.value)}
+                />
+              </View>
+              <Button
+                className="rounded-xl px-4 py-3 text-sm shrink-0"
+                style={{
+                  backgroundColor: countdown > 0 ? '#E8C9C4' : '#D98C9A',
+                  color: '#fff',
+                  minWidth: '90px',
+                }}
+                onClick={handleSendCode}
+                disabled={countdown > 0 || loading}
+              >
+                <Text className="text-white text-sm">
+                  {countdown > 0 ? `${countdown}s` : (codeSent ? '重新发送' : '获取验证码')}
+                </Text>
+              </Button>
+            </View>
+            {codeSent && (
+              <Text className="block text-xs mt-1" style={{ color: '#C4A09A' }}>
+                验证码已发送至 {qqNumber}@qq.com
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* 密码 */}
         <View className="mb-4">
@@ -152,7 +268,7 @@ export default function Login() {
           <Text
             className="text-sm"
             style={{ color: '#C77763' }}
-            onClick={() => setIsRegister(!isRegister)}
+            onClick={() => { setIsRegister(!isRegister); setCodeSent(false); setVerifyCode(''); setCountdown(0) }}
           >
             {isRegister ? '已有账号？去登录' : '没有账号？去注册'}
           </Text>
