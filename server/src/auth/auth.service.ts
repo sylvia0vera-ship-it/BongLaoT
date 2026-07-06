@@ -18,35 +18,41 @@ export class AuthService {
   }
 
   /** 注册 */
-  async register(username: string, password: string, nickname?: string) {
-    if (!username || username.length < 2) {
-      throw new BadRequestException('用户名至少2个字符')
+  async register(email: string, password: string, nickname?: string) {
+    if (!email || !email.endsWith('@qq.com')) {
+      throw new BadRequestException('请使用QQ邮箱注册')
+    }
+    const emailPrefix = email.replace('@qq.com', '')
+    if (!/^\d{5,11}$/.test(emailPrefix)) {
+      throw new BadRequestException('QQ号格式不正确')
     }
     if (!password || password.length < 6) {
       throw new BadRequestException('密码至少6个字符')
     }
 
-    // 检查用户名是否已存在
+    // 检查邮箱是否已存在
     const { data: existing } = await this.supabase
       .from('users')
       .select('id')
-      .eq('username', username)
+      .eq('email', email)
       .single()
 
     if (existing) {
-      throw new BadRequestException('用户名已存在')
+      throw new BadRequestException('该QQ邮箱已注册')
     }
 
     const hashedPassword = this.hashPassword(password)
+    const username = emailPrefix
 
     const { data, error } = await this.supabase
       .from('users')
       .insert({
+        email,
         username,
         password: hashedPassword,
         nickname: nickname || username,
       })
-      .select('id, username, nickname, avatar_url, created_at')
+      .select('id, email, username, nickname, avatar_url, created_at')
       .single()
 
     if (error) throw new BadRequestException('注册失败：' + error.message)
@@ -57,18 +63,18 @@ export class AuthService {
   }
 
   /** 登录 */
-  async login(username: string, password: string) {
+  async login(email: string, password: string) {
     const hashedPassword = this.hashPassword(password)
 
     const { data, error } = await this.supabase
       .from('users')
-      .select('id, username, nickname, avatar_url, created_at')
-      .eq('username', username)
+      .select('id, email, username, nickname, avatar_url, created_at')
+      .eq('email', email)
       .eq('password', hashedPassword)
       .single()
 
     if (error || !data) {
-      throw new UnauthorizedException('用户名或密码错误')
+      throw new UnauthorizedException('邮箱或密码错误')
     }
 
     const token = this.generateToken(data.id)

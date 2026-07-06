@@ -11,14 +11,14 @@ const HEADER_TOP = STATUS_BAR_HEIGHT + 40 + 8
 
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false)
-  const [username, setUsername] = useState('')
+  const [qqNumber, setQqNumber] = useState('')
   const [password, setPassword] = useState('')
   const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async () => {
-    if (!username.trim()) {
-      Taro.showToast({ title: '请输入用户名', icon: 'none' })
+    if (!qqNumber.trim() || !/^\d{5,11}$/.test(qqNumber.trim())) {
+      Taro.showToast({ title: '请输入正确的QQ号', icon: 'none' })
       return
     }
     if (!password.trim() || password.length < 6) {
@@ -26,15 +26,16 @@ export default function Login() {
       return
     }
 
+    const email = qqNumber.trim() + '@qq.com'
     setLoading(true)
     try {
       const url = isRegister ? '/api/auth/register' : '/api/auth/login'
-      const data: Record<string, string> = { username: username.trim(), password }
+      const data: Record<string, string> = { email, password }
       if (isRegister && nickname.trim()) {
         data.nickname = nickname.trim()
       }
 
-      console.log('[Login] POST', url, { username: data.username })
+      console.log('[Login] POST', url, { email })
       const res = await Network.request({
         url,
         method: 'POST',
@@ -87,16 +88,20 @@ export default function Login() {
           {isRegister ? '注册账号' : '欢迎回来'}
         </Text>
 
-        {/* 用户名 */}
+        {/* QQ号 + @qq.com 后缀 */}
         <View className="mb-4">
-          <Text className="block text-sm mb-2" style={{ color: '#A85D6A' }}>用户名</Text>
-          <View className="rounded-xl px-4 py-3" style={{ backgroundColor: '#F8EDEB' }}>
-            <Input
-              className="w-full bg-transparent"
-              placeholder="请输入用户名"
-              value={username}
-              onInput={(e) => setUsername(e.detail.value)}
-            />
+          <Text className="block text-sm mb-2" style={{ color: '#A85D6A' }}>QQ邮箱</Text>
+          <View className="rounded-xl flex flex-row items-center" style={{ backgroundColor: '#F8EDEB' }}>
+            <View className="flex-1 px-4 py-3">
+              <Input
+                className="w-full bg-transparent"
+                type="number"
+                placeholder="请输入QQ号"
+                value={qqNumber}
+                onInput={(e) => setQqNumber(e.detail.value)}
+              />
+            </View>
+            <Text className="pr-4 text-sm" style={{ color: '#A85D6A' }}>@qq.com</Text>
           </View>
         </View>
 

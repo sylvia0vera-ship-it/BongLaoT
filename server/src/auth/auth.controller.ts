@@ -9,10 +9,10 @@ export class AuthController {
   @Post('register')
   @HttpCode(200)
   async register(
-    @Body() body: { username: string; password: string; nickname?: string }
+    @Body() body: { email: string; password: string; nickname?: string }
   ) {
-    console.log('[Auth] POST /api/auth/register', { username: body.username })
-    const result = await this.authService.register(body.username, body.password, body.nickname)
+    console.log('[Auth] POST /api/auth/register', { email: body.email })
+    const result = await this.authService.register(body.email, body.password, body.nickname)
     console.log('[Auth] 注册成功', { userId: result.user.id })
     return { code: 200, msg: '注册成功', data: result }
   }
@@ -21,10 +21,10 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   async login(
-    @Body() body: { username: string; password: string }
+    @Body() body: { email: string; password: string }
   ) {
-    console.log('[Auth] POST /api/auth/login', { username: body.username })
-    const result = await this.authService.login(body.username, body.password)
+    console.log('[Auth] POST /api/auth/login', { email: body.email })
+    const result = await this.authService.login(body.email, body.password)
     console.log('[Auth] 登录成功', { userId: result.user.id })
     return { code: 200, msg: '登录成功', data: result }
   }

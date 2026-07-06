@@ -44,7 +44,8 @@ export const users = pgTable(
   "users",
   {
     id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
-    username: varchar("username", { length: 64 }).notNull().unique(),
+    email: varchar("email", { length: 128 }).notNull().unique(),
+    username: varchar("username", { length: 64 }).notNull(),
     password: varchar("password", { length: 256 }).notNull(),
     nickname: varchar("nickname", { length: 64 }),
     avatar_url: text("avatar_url"),
@@ -52,7 +53,7 @@ export const users = pgTable(
     updated_at: timestamp("updated_at", { withTimezone: true }),
   },
   (table) => [
-    index("users_username_idx").on(table.username),
+    index("users_email_idx").on(table.email),
   ]
 );
 
