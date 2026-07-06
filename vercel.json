@@ -1,5 +1,7 @@
 {
+  "buildCommand": "bash scripts/vercel-build.sh",
   "outputDirectory": "dist-web",
-  "installCommand": "pnpm install --no-optional",
-  "buildCommand": "pnpm exec taro build --type h5"
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" }
+  ]
 }

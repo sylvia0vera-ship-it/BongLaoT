@@ -16,7 +16,7 @@ function parsePort(): number {
   return 3000;
 }
 
-async function bootstrap() {
+export async function createApp() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
@@ -29,13 +29,17 @@ async function bootstrap() {
 
   // 全局拦截器：统一将 POST 请求的 201 状态码改为 200
   app.useGlobalInterceptors(new HttpStatusInterceptor());
-  // 1. 开启优雅关闭 Hooks (关键!)
   app.enableShutdownHooks();
+
+  return app;
+}
+
+async function bootstrap() {
+  const app = await createApp();
 
   // 静态文件服务：生产模式下提供 H5 构建产物
   const h5DistPath = join(__dirname, '..', '..', 'dist-web');
   app.use(express.static(h5DistPath));
-  // SPA fallback：未匹配的路由返回 index.html
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (!req.path.startsWith('/api')) {
       res.sendFile(join(h5DistPath, 'index.html'));
@@ -44,19 +48,23 @@ async function bootstrap() {
     }
   });
 
-  // 2. 解析端口
   const port = parsePort();
   try {
     await app.listen(port);
     console.log(`Server running on http://localhost:${port}`);
   } catch (err) {
     if (err.code === 'EADDRINUSE') {
-      console.error(`❌ 端口 ${port} 被占用! 请运行 'npx kill-port ${port}' 然后重试。`);
+      console.error(`Port ${port} in use`);
       process.exit(1);
     } else {
       throw err;
     }
   }
-  console.log(`Application is running on: http://localhost:${port}`);
 }
-bootstrap();
+
+// Serverless: export handler, Local: bootstrap
+if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  // Serverless mode — handler exported below
+} else {
+  bootstrap();
+}
