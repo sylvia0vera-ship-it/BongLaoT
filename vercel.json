@@ -1,23 +1,5 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "server/dist/main.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "dist-web/**",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server/dist/main.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "dist-web/$1"
-    }
-  ]
+  "outputDirectory": "dist-web",
+  "installCommand": "pnpm install --no-optional",
+  "buildCommand": "pnpm exec taro build --type h5"
 }
