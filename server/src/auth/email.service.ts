@@ -54,8 +54,16 @@ export class EmailService {
 
     this.codeStore.set(email, { code, email, expiresAt, verified: false })
 
+    const senderEmail = process.env.SENDER_QQ_EMAIL
+    const senderAuthCode = process.env.SENDER_QQ_AUTH_CODE
+
+    // 未配置 SMTP 时，直接返回验证码（开发模式）
+    if (!senderEmail || !senderAuthCode) {
+      console.log(`[Email] 开发模式：验证码为 ${code}（邮箱 ${email}）`)
+      return { devCode: code }
+    }
+
     const transporter = this.getTransporter()
-    const senderEmail = process.env.SENDER_QQ_EMAIL!
 
     try {
       await transporter.sendMail({
@@ -74,6 +82,7 @@ export class EmailService {
         `,
       })
       console.log('[Email] 验证码已发送:', email)
+      return { devCode: null }
     } catch (err: any) {
       console.error('[Email] 发送失败:', err.message)
       throw new BadRequestException('验证码发送失败，请检查邮箱地址或稍后重试')

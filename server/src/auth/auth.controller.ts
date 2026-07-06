@@ -10,8 +10,9 @@ export class AuthController {
   @HttpCode(200)
   async sendCode(@Body() body: { email: string }) {
     console.log('[Auth] POST /api/auth/send-code', { email: body.email })
-    await this.authService.sendCode(body.email)
-    return { code: 200, msg: '验证码已发送' }
+    const result = await this.authService.sendCode(body.email)
+    // 开发模式：未配置SMTP时返回验证码，方便测试
+    return { code: 200, msg: '验证码已发送', data: result.devCode ? { devCode: result.devCode } : null }
   }
 
   /** 注册（带验证码） */

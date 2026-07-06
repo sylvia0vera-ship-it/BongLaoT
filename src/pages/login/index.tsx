@@ -41,7 +41,15 @@ export default function Login() {
 
       if (res.data?.code === 200) {
         setCodeSent(true)
-        Taro.showToast({ title: '验证码已发送', icon: 'success' })
+
+        // 开发模式：后端返回 devCode 时自动填入
+        const devCode = res.data?.data?.devCode
+        if (devCode) {
+          setVerifyCode(devCode)
+          Taro.showToast({ title: `验证码：${devCode}`, icon: 'none', duration: 3000 })
+        } else {
+          Taro.showToast({ title: '验证码已发送', icon: 'success' })
+        }
 
         // 60秒倒计时
         setCountdown(60)

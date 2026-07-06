@@ -41,7 +41,7 @@ export class AuthService {
       throw new BadRequestException('该QQ邮箱已注册，请直接登录')
     }
 
-    await this.emailService.sendVerificationCode(email)
+    return await this.emailService.sendVerificationCode(email)
   }
 
   /** 注册（需先验证码验证） */
