@@ -168,7 +168,7 @@ export default function Index() {
       <View style={{ paddingTop: HEADER_TOP, paddingLeft: 16, paddingRight: 16, paddingBottom: 8, display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <BookHeart size={22} color="#A85D6A" />
-          <Text className="block text-2xl font-bold" style={{ color: '#2F2523' }}>回复小助手</Text>
+          <Text className="block text-2xl font-bold" style={{ color: '#2F2523' }}>陪伴小助手</Text>
         </View>
         <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {userInfo && (
@@ -204,7 +204,7 @@ export default function Index() {
       <View style={{ marginLeft: 12, marginRight: 12, marginBottom: 8, padding: 12, borderRadius: 16, backgroundColor: '#FDE2E4' }}>
         {/* 粉丝选择 */}
         <View style={{ marginBottom: 8 }}>
-          <Text className="block text-xs mb-1" style={{ color: '#7A8061' }}>选择粉丝</Text>
+          <Text className="block text-xs mb-1" style={{ color: '#7A8061' }}>♡ 选择粉丝</Text>
           {fans.length === 0 ? (
             <View onClick={() => Taro.switchTab({ url: '/pages/fans/index' })} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 12, backgroundColor: '#FFF1DE', borderWidth: 1, borderColor: '#E8C9C4', borderStyle: 'dashed' }}>
               <Text className="block text-xs" style={{ color: '#C77763' }}>暂无粉丝，点击去添加 →</Text>

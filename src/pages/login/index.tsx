@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import Taro from '@tarojs/taro'
 import { Network } from '@/network'
-import { BookHeart } from 'lucide-react-taro'
+import { BookHeart, Sparkles, Heart } from 'lucide-react-taro'
 
 const STATUS_BAR_HEIGHT = Taro.getSystemInfoSync().statusBarHeight || 0
 const HEADER_TOP = STATUS_BAR_HEIGHT + 40 + 8
@@ -158,47 +158,70 @@ export default function Login() {
   }
 
   return (
-    <View className="min-h-screen" style={{ backgroundColor: '#F8EDEB' }}>
+    <View className="min-h-screen" style={{ backgroundColor: '#FDF6F0' }}>
       {/* 安全区 */}
       <View style={{ height: HEADER_TOP, flexShrink: 0 }} />
 
-      {/* 品牌区 */}
+      {/* 品牌区 - 手账风装饰 */}
       <View className="flex flex-col items-center mt-12 mb-10">
-        <BookHeart size={56} color="#D98C9A" />
-        <Text className="block text-2xl font-bold mt-4" style={{ color: '#A85D6A' }}>回复小助手</Text>
-        <Text className="block text-sm mt-2" style={{ color: '#C77763' }}>主播私域关系维护工作台</Text>
+        <View className="relative">
+          <BookHeart size={56} color="#C4868D" />
+          <Sparkles size={16} color="#D4A574" className="absolute -top-1 -right-2" />
+        </View>
+        <Text className="block text-2xl font-bold mt-4" style={{ color: '#5C3D2E' }}>回复小助手</Text>
+        <Text className="block text-sm mt-2" style={{ color: '#A89282' }}>主播私域关系维护工作台</Text>
+        <View className="flex flex-row items-center gap-1 mt-2">
+          <Heart size={10} color="#C4868D" />
+          <Text className="block text-xs" style={{ color: '#C4868D' }}>温柔陪伴每一段关系</Text>
+          <Heart size={10} color="#C4868D" />
+        </View>
       </View>
 
-      {/* 表单卡片 */}
-      <View className="mx-6 rounded-2xl p-6" style={{ backgroundColor: 'rgba(255,255,255,0.7)' }}>
-        <Text className="block text-lg font-semibold mb-5" style={{ color: '#A85D6A' }}>
-          {isRegister ? '注册账号' : '欢迎回来'}
+      {/* 表单卡片 - Paper Card 风格 */}
+      <View className="mx-6 p-6" style={{
+        backgroundColor: '#FFFAF5',
+        borderRadius: '24px',
+        boxShadow: '0 6px 20px rgba(92,61,46,0.06)',
+        border: '1px solid #F0DDD0',
+      }}
+      >
+        <Text className="block text-lg font-semibold mb-5" style={{ color: '#5C3D2E' }}>
+          {isRegister ? '♡ 注册账号' : '♡ 欢迎回来'}
         </Text>
 
         {/* QQ号 + @qq.com 后缀 */}
         <View className="mb-4">
-          <Text className="block text-sm mb-2" style={{ color: '#A85D6A' }}>QQ邮箱</Text>
+          <Text className="block text-sm mb-2" style={{ color: '#8B6F5E' }}>QQ邮箱</Text>
           <View className="flex flex-row items-center gap-2">
-            <View className="flex-1 rounded-xl flex flex-row items-center" style={{ backgroundColor: '#F8EDEB' }}>
+            <View className="flex-1 flex flex-row items-center" style={{
+              backgroundColor: '#FEF5EE',
+              borderRadius: '24px',
+              border: '1px solid #F0DDD0',
+            }}
+            >
               <View className="flex-1 px-4 py-3">
                 <Input
                   className="w-full bg-transparent"
                   type="number"
                   placeholder="请输入QQ号"
+                  placeholderStyle="color: #C4B5A5"
                   value={qqNumber}
                   onInput={(e) => setQqNumber(e.detail.value)}
                 />
               </View>
-              <Text className="pr-4 text-sm shrink-0" style={{ color: '#A85D6A' }}>@qq.com</Text>
+              <Text className="pr-4 text-sm shrink-0" style={{ color: '#C4868D' }}>@qq.com</Text>
             </View>
             {/* 注册时：获取验证码按钮紧跟QQ号 */}
             {isRegister && (
               <Button
-                className="rounded-xl px-3 py-3 text-sm shrink-0"
+                className="shrink-0 text-sm"
                 style={{
-                  backgroundColor: countdown > 0 ? '#E8C9C4' : '#D98C9A',
+                  backgroundColor: countdown > 0 ? '#E8D5CC' : '#C4868D',
                   color: '#fff',
+                  borderRadius: '28px',
                   minWidth: '80px',
+                  padding: '12px 14px',
+                  boxShadow: countdown > 0 ? 'none' : '0 3px 10px rgba(196,134,141,0.25)',
                 }}
                 onClick={handleSendCode}
                 disabled={countdown > 0 || loading}
@@ -214,19 +237,25 @@ export default function Login() {
         {/* 注册时：验证码输入 */}
         {isRegister && (
           <View className="mb-4">
-            <Text className="block text-sm mb-2" style={{ color: '#A85D6A' }}>验证码</Text>
-            <View className="rounded-xl px-4 py-3" style={{ backgroundColor: '#F8EDEB' }}>
+            <Text className="block text-sm mb-2" style={{ color: '#8B6F5E' }}>验证码</Text>
+            <View className="px-4 py-3" style={{
+              backgroundColor: '#FEF5EE',
+              borderRadius: '24px',
+              border: '1px solid #F0DDD0',
+            }}
+            >
               <Input
                 className="w-full bg-transparent"
                 type="number"
                 placeholder="请输入6位验证码"
+                placeholderStyle="color: #C4B5A5"
                 value={verifyCode}
                 onInput={(e) => setVerifyCode(e.detail.value)}
               />
             </View>
             {codeSent && (
-              <Text className="block text-xs mt-1" style={{ color: '#C4A09A' }}>
-                验证码已发送至 {qqNumber}@qq.com，请查收邮件
+              <Text className="block text-xs mt-1" style={{ color: '#A89282' }}>
+                ✉ 验证码已发送至 {qqNumber}@qq.com，请查收邮件
               </Text>
             )}
           </View>
@@ -234,13 +263,19 @@ export default function Login() {
 
         {/* 密码 */}
         <View className="mb-4">
-          <Text className="block text-sm mb-2" style={{ color: '#A85D6A' }}>密码</Text>
-          <View className="rounded-xl px-4 py-3" style={{ backgroundColor: '#F8EDEB' }}>
+          <Text className="block text-sm mb-2" style={{ color: '#8B6F5E' }}>密码</Text>
+          <View className="px-4 py-3" style={{
+            backgroundColor: '#FEF5EE',
+            borderRadius: '24px',
+            border: '1px solid #F0DDD0',
+          }}
+          >
             <Input
               className="w-full bg-transparent"
               type="text"
               password
               placeholder="至少6位密码"
+              placeholderStyle="color: #C4B5A5"
               value={password}
               onInput={(e) => setPassword(e.detail.value)}
             />
@@ -250,11 +285,17 @@ export default function Login() {
         {/* 昵称（注册时） */}
         {isRegister && (
           <View className="mb-4">
-            <Text className="block text-sm mb-2" style={{ color: '#A85D6A' }}>昵称（选填）</Text>
-            <View className="rounded-xl px-4 py-3" style={{ backgroundColor: '#F8EDEB' }}>
+            <Text className="block text-sm mb-2" style={{ color: '#8B6F5E' }}>昵称（选填）</Text>
+            <View className="px-4 py-3" style={{
+              backgroundColor: '#FEF5EE',
+              borderRadius: '24px',
+              border: '1px solid #F0DDD0',
+            }}
+            >
               <Input
                 className="w-full bg-transparent"
                 placeholder="给自己取个昵称吧"
+                placeholderStyle="color: #C4B5A5"
                 value={nickname}
                 onInput={(e) => setNickname(e.detail.value)}
               />
@@ -262,10 +303,15 @@ export default function Login() {
           </View>
         )}
 
-        {/* 提交按钮 */}
+        {/* 提交按钮 - 豆沙粉圆角 */}
         <Button
-          className="w-full rounded-xl py-3 mt-2 text-white font-semibold"
-          style={{ backgroundColor: '#D98C9A' }}
+          className="w-full py-3 mt-2"
+          style={{
+            backgroundColor: '#C4868D',
+            color: '#fff',
+            borderRadius: '28px',
+            boxShadow: '0 4px 14px rgba(196,134,141,0.3)',
+          }}
           onClick={handleSubmit}
           disabled={loading}
         >
@@ -274,21 +320,21 @@ export default function Login() {
           </Text>
         </Button>
 
-        {/* 切换登录/注册 */}
-        <View className="flex justify-center mt-4">
+        {/* 切换登录/注册 - 虚线分隔 */}
+        <View className="flex justify-center mt-5 pt-4" style={{ borderTop: '1px dashed #F0DDD0' }}>
           <Text
             className="text-sm"
-            style={{ color: '#C77763' }}
+            style={{ color: '#C4868D' }}
             onClick={() => { setIsRegister(!isRegister); setCodeSent(false); setVerifyCode(''); setCountdown(0) }}
           >
-            {isRegister ? '已有账号？去登录' : '没有账号？去注册'}
+            {isRegister ? '已有账号？去登录 →' : '没有账号？去注册 →'}
           </Text>
         </View>
       </View>
 
-      {/* 底部装饰 */}
-      <View className="flex justify-center mt-10">
-        <Text className="block text-xs" style={{ color: '#C4A09A' }}>让每一次回复都有温度</Text>
+      {/* 底部装饰 - 手账风 */}
+      <View className="flex flex-col items-center mt-10">
+        <Text className="block text-xs" style={{ color: '#C4B5A5' }}>✦ 让每一次回复都有温度 ✦</Text>
       </View>
     </View>
   )

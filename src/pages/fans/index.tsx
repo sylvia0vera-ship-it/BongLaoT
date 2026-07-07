@@ -170,7 +170,7 @@ const IndexPage = () => {
               <ArrowLeft size={18} color="#7A8061" />
               <Text className="block text-sm" style={{ color: '#7A8061' }}>返回</Text>
             </View>
-            <Text className="block text-base font-bold" style={{ color: '#2F2523' }}>{editFan ? '编辑粉丝' : '添加粉丝'}</Text>
+            <Text className="block text-base font-bold" style={{ color: '#2F2523' }}>{editFan ? '♡ 编辑档案' : '♡ 添加档案'}</Text>
             <View onClick={handleSave} style={{ opacity: saving ? 0.6 : 1 }}>
               {saving ? <Loader size={16} color="#A85D6A" /> : <Check size={18} color="#A85D6A" />}
             </View>
@@ -307,14 +307,14 @@ const IndexPage = () => {
         <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <BookHeart size={20} color="#A85D6A" />
-            <Text className="block text-lg font-bold" style={{ color: '#2F2523' }}>粉丝档案</Text>
+            <Text className="block text-lg font-bold" style={{ color: '#2F2523' }}>♡ 粉丝档案</Text>
           </View>
           <View onClick={openNewFan} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4, paddingTop: 3, paddingBottom: 3, paddingLeft: 10, paddingRight: 10, borderRadius: 16, backgroundColor: '#FDE2E4', borderWidth: 1, borderColor: '#D98C9A', borderStyle: 'dashed' }}>
             <UserPlus size={13} color="#D98C9A" />
             <Text className="block text-xs font-bold" style={{ color: '#D98C9A' }}>添加</Text>
           </View>
         </View>
-        <Text className="block text-xs mt-1" style={{ color: '#7A8061' }}>管理粉丝档案，分析时自动带入记忆</Text>
+        <Text className="block text-xs mt-1" style={{ color: '#7A8061' }}>记录每一个值得用心对待的人 ♡</Text>
       </View>
 
       <View style={{ flex: 1, paddingLeft: 16, paddingRight: 16, paddingTop: 8, paddingBottom: 24 }}>
@@ -325,8 +325,8 @@ const IndexPage = () => {
         ) : fans.length === 0 ? (
           <View style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 64, paddingBottom: 64}}>
             <StickyNote size={48} color="#E8C9C4" />
-            <Text className="block text-sm mt-4" style={{ color: '#7A8061' }}>还没有粉丝档案</Text>
-            <Text className="block text-xs mt-1" style={{ color: '#7A8061' }}>点击右上角添加你的第一个粉丝</Text>
+            <Text className="block text-sm mt-4" style={{ color: '#7A8061' }}>还没有粉丝档案 ♡</Text>
+            <Text className="block text-xs mt-1" style={{ color: '#7A8061' }}>点击右上角，记录第一个用心的人 ♡</Text>
           </View>
         ) : (
           <View style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
