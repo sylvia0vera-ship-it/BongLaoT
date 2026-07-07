@@ -45,10 +45,10 @@ interface FanProfile {
 }
 
 const STAGE_CONFIG: Record<string, { color: string; bg: string }> = {
-  '普通互动': { color: '#8BA06E', bg: '#F0EDE4' },
+  '普通互动': { color: '#7A9A58', bg: '#F0EDE4' },
   '熟悉陪伴': { color: '#5B8A72', bg: '#E8F5EE' },
-  '暧昧升温': { color: '#F08C99', bg: '#FEF3F0' },
-  '恋爱感人设': { color: '#C77A6E', bg: '#FFF2EA' },
+  '暧昧升温': { color: '#F08C99', bg: '#FEF0F2' },
+  '恋爱感人设': { color: '#C77A6E', bg: '#FFF0E6' },
   '冷淡流失': { color: '#6B8EB5', bg: '#E8F0F8' },
   '风险降温': { color: '#B55A5A', bg: '#FDE8E8' },
 }
@@ -167,10 +167,10 @@ const IndexPage = () => {
         <View style={{ paddingTop: HEADER_TOP_PADDING, paddingLeft: 20, paddingRight: 20, paddingBottom: 12 }}>
           <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View onClick={() => setShowEditor(false)} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <ArrowLeft size={18} color="#8BA06E" />
-              <Text className="block text-sm" style={{ color: '#8BA06E' }}>返回</Text>
+              <ArrowLeft size={18} color="#7A9A58" />
+              <Text className="block text-sm" style={{ color: '#7A9A58' }}>返回</Text>
             </View>
-            <Text className="block text-base font-bold" style={{ color: '#5C3A32' }}>{editFan ? '♡ 编辑档案' : '♡ 添加档案'}</Text>
+            <Text className="block text-base font-bold" style={{ color: '#4A2C2A' }}>{editFan ? '♡ 编辑档案' : '♡ 添加档案'}</Text>
             <View onClick={handleSave} style={{ opacity: saving ? 0.6 : 1 }}>
               {saving ? <Loader size={16} color="#C49890" /> : <Check size={18} color="#C49890" />}
             </View>
@@ -184,7 +184,7 @@ const IndexPage = () => {
               <Users size={12} color="#C49890" />
               <Text className="block text-xs font-bold" style={{ color: '#C49890' }}>昵称 *</Text>
             </View>
-            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FEF3F0', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
+            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FEF0F2', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
               <Input style={{ fontSize: '14px', width: '100%', backgroundColor: 'transparent' }} placeholder="粉丝的微信昵称或备注名" value={formName} onInput={(e) => setFormName(e.detail.value)} maxlength={128} />
             </View>
           </View>
@@ -195,7 +195,7 @@ const IndexPage = () => {
               <HandHeart size={12} color="#C49890" />
               <Text className="block text-xs font-bold" style={{ color: '#C49890' }}>常用称呼</Text>
             </View>
-            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FFF2EA', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
+            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FFF0E6', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
               <Input style={{ fontSize: '14px', width: '100%', backgroundColor: 'transparent' }} placeholder="你平时怎么称呼ta，如：宝贝、哥" value={formPreferredName} onInput={(e) => setFormPreferredName(e.detail.value)} maxlength={50} />
             </View>
           </View>
@@ -211,7 +211,7 @@ const IndexPage = () => {
                 const style = getStageStyle(stage)
                 const selected = formStage === stage
                 return (
-                  <View key={stage} onClick={() => setFormStage(stage)} style={{ paddingTop: 3, paddingBottom: 3, paddingLeft: 8, paddingRight: 8, borderRadius: 12, backgroundColor: selected ? style.bg : '#FFF5F2', borderWidth: 1, borderColor: selected ? style.color : '#F0D6CE', borderStyle: selected ? 'solid' : 'dashed' }}>
+                  <View key={stage} onClick={() => setFormStage(stage)} style={{ paddingTop: 3, paddingBottom: 3, paddingLeft: 8, paddingRight: 8, borderRadius: 12, backgroundColor: selected ? style.bg : '#FFF7F0', borderWidth: 1, borderColor: selected ? style.color : '#F0D6CE', borderStyle: selected ? 'solid' : 'dashed' }}>
                     <Text className="block text-xs font-bold" style={{ color: selected ? style.color : '#999' }}>{stage}</Text>
                   </View>
                 )
@@ -236,7 +236,7 @@ const IndexPage = () => {
               <MessageCircleHeart size={12} color="#C49890" />
               <Text className="block text-xs font-bold" style={{ color: '#C49890' }}>聊天偏好</Text>
             </View>
-            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FEF3F0', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
+            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FEF0F2', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
               <Input style={{ fontSize: '14px', width: '100%', backgroundColor: 'transparent' }} placeholder="如：喜欢被夸、爱聊日常、需要秒回" value={formChatPref} onInput={(e) => setFormChatPref(e.detail.value)} maxlength={200} />
             </View>
           </View>
@@ -258,7 +258,7 @@ const IndexPage = () => {
               <NotebookPen size={12} color="#C49890" />
               <Text className="block text-xs font-bold" style={{ color: '#C49890' }}>最近一次互动摘要</Text>
             </View>
-            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FFF5F2', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
+            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FFF7F0', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
               <Input style={{ fontSize: '14px', width: '100%', backgroundColor: 'transparent' }} placeholder="上次聊了什么，感觉怎么样" value={formLastSummary} onInput={(e) => setFormLastSummary(e.detail.value)} maxlength={300} />
             </View>
           </View>
@@ -269,7 +269,7 @@ const IndexPage = () => {
               <HandHeart size={12} color="#C49890" />
               <Text className="block text-xs font-bold" style={{ color: '#C49890' }}>下一步维护建议</Text>
             </View>
-            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FFF2EA', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
+            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FFF0E6', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
               <Input style={{ fontSize: '14px', width: '100%', backgroundColor: 'transparent' }} placeholder="下次可以怎么开场，需要什么铺垫" value={formNextTip} onInput={(e) => setFormNextTip(e.detail.value)} maxlength={300} />
             </View>
           </View>
@@ -280,7 +280,7 @@ const IndexPage = () => {
               <Tag size={12} color="#C49890" />
               <Text className="block text-xs font-bold" style={{ color: '#C49890' }}>标签</Text>
             </View>
-            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FFF2EA', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
+            <View style={{ borderRadius: 12, paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#FFF0E6', borderWidth: 1, borderColor: '#F0D6CE', borderStyle: 'dashed' }}>
               <Input style={{ fontSize: '14px', width: '100%', backgroundColor: 'transparent' }} placeholder="如：大R, 常互动, 暧昧试探（逗号分隔）" value={formTags} onInput={(e) => setFormTags(e.detail.value)} maxlength={200} />
             </View>
           </View>
@@ -307,14 +307,14 @@ const IndexPage = () => {
         <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <BookHeart size={20} color="#C49890" />
-            <Text className="block text-lg font-bold" style={{ color: '#5C3A32' }}>♡ 粉丝档案</Text>
+            <Text className="block text-lg font-bold" style={{ color: '#4A2C2A' }}>♡ 粉丝档案</Text>
           </View>
-          <View onClick={openNewFan} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4, paddingTop: 3, paddingBottom: 3, paddingLeft: 10, paddingRight: 10, borderRadius: 16, backgroundColor: '#FEF3F0', borderWidth: 1, borderColor: '#F08C99', borderStyle: 'dashed' }}>
+          <View onClick={openNewFan} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4, paddingTop: 3, paddingBottom: 3, paddingLeft: 10, paddingRight: 10, borderRadius: 16, backgroundColor: '#FEF0F2', borderWidth: 1, borderColor: '#F08C99', borderStyle: 'dashed' }}>
             <UserPlus size={13} color="#F08C99" />
             <Text className="block text-xs font-bold" style={{ color: '#F08C99' }}>添加</Text>
           </View>
         </View>
-        <Text className="block text-xs mt-1" style={{ color: '#8BA06E' }}>记录每一个值得用心对待的人 ♡</Text>
+        <Text className="block text-xs mt-1" style={{ color: '#7A9A58' }}>记录每一个值得用心对待的人 ♡</Text>
       </View>
 
       <View style={{ flex: 1, paddingLeft: 16, paddingRight: 16, paddingTop: 8, paddingBottom: 24 }}>
@@ -325,8 +325,8 @@ const IndexPage = () => {
         ) : fans.length === 0 ? (
           <View style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 64, paddingBottom: 64}}>
             <StickyNote size={48} color="#F0D6CE" />
-            <Text className="block text-sm mt-4" style={{ color: '#8BA06E' }}>还没有粉丝档案 ♡</Text>
-            <Text className="block text-xs mt-1" style={{ color: '#8BA06E' }}>点击右上角，记录第一个用心的人 ♡</Text>
+            <Text className="block text-sm mt-4" style={{ color: '#7A9A58' }}>还没有粉丝档案 ♡</Text>
+            <Text className="block text-xs mt-1" style={{ color: '#7A9A58' }}>点击右上角，记录第一个用心的人 ♡</Text>
           </View>
         ) : (
           <View style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -349,19 +349,19 @@ const IndexPage = () => {
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Text className="block text-sm font-bold" style={{ color: '#5C3A32' }}>{fan.name}</Text>
+                          <Text className="block text-sm font-bold" style={{ color: '#4A2C2A' }}>{fan.name}</Text>
                           <View style={{ paddingTop: 1, paddingBottom: 1, paddingLeft: 6, paddingRight: 6, borderRadius: 10, backgroundColor: stageStyle.bg }}>
                             <Text className="block text-xs font-bold" style={{ color: stageStyle.color }}>{fan.relationship_stage || '普通互动'}</Text>
                           </View>
                         </View>
                         {fan.preferred_name && (
-                          <Text className="block text-xs mt-1" style={{ color: '#8BA06E' }}>称呼：{fan.preferred_name}</Text>
+                          <Text className="block text-xs mt-1" style={{ color: '#7A9A58' }}>称呼：{fan.preferred_name}</Text>
                         )}
                       </View>
                     </View>
                     <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <View onClick={(e) => { e.stopPropagation(); openEditFan(fan) }} style={{ width: 26, height: 26, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: 13, backgroundColor: '#FFF5F2' }}>
-                        <PenLine size={12} color="#8BA06E" />
+                      <View onClick={(e) => { e.stopPropagation(); openEditFan(fan) }} style={{ width: 26, height: 26, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: 13, backgroundColor: '#FFF7F0' }}>
+                        <PenLine size={12} color="#7A9A58" />
                       </View>
                       <View onClick={(e) => { e.stopPropagation(); handleDelete(fan.id) }} style={{ width: 26, height: 26, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: 13, backgroundColor: '#FDE8E8' }}>
                         <Trash2 size={12} color="#B55A5A" />
@@ -374,18 +374,18 @@ const IndexPage = () => {
                     {tagList.length > 0 && (
                       <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 3, marginBottom: 4 }}>
                         {tagList.map((tag, i) => (
-                          <View key={i} style={{ paddingTop: 1, paddingBottom: 1, paddingLeft: 6, paddingRight: 6, borderRadius: 10, backgroundColor: '#FFF2EA' }}>
+                          <View key={i} style={{ paddingTop: 1, paddingBottom: 1, paddingLeft: 6, paddingRight: 6, borderRadius: 10, backgroundColor: '#FFF0E6' }}>
                             <Text className="block text-xs" style={{ color: '#C77A6E' }}>{tag}</Text>
                           </View>
                         ))}
                       </View>
                     )}
                     {fan.spending_habit && (
-                      <Text className="block text-xs" style={{ color: '#8BA06E' }}>💰 {fan.spending_habit}</Text>
+                      <Text className="block text-xs" style={{ color: '#7A9A58' }}>💰 {fan.spending_habit}</Text>
                     )}
                     {fan.last_interaction_summary && (
-                      <View style={{ marginTop: 3, paddingTop: 2, paddingBottom: 2, paddingLeft: 8, paddingRight: 8, borderRadius: 6, backgroundColor: '#FFF5F2' }}>
-                        <Text className="block text-xs" style={{ color: '#8BA06E' }}>最近：{fan.last_interaction_summary}</Text>
+                      <View style={{ marginTop: 3, paddingTop: 2, paddingBottom: 2, paddingLeft: 8, paddingRight: 8, borderRadius: 6, backgroundColor: '#FFF7F0' }}>
+                        <Text className="block text-xs" style={{ color: '#7A9A58' }}>最近：{fan.last_interaction_summary}</Text>
                       </View>
                     )}
                     {fan.next_maintenance_tip && (

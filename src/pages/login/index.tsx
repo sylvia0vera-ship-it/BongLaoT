@@ -158,7 +158,7 @@ export default function Login() {
   }
 
   return (
-    <View className="min-h-screen" style={{ backgroundColor: '#FDF6F0' }}>
+    <View className="min-h-screen" style={{ backgroundColor: '#FFF8F4' }}>
       {/* 安全区 */}
       <View style={{ height: HEADER_TOP, flexShrink: 0 }} />
 
