@@ -11,43 +11,43 @@ page {
 :root,
 page,
 root-portal {
-  /* Warm Scrapbook UI - 奶油白背景系 */
-  --background: #FDF6F0;
-  --foreground: #5C3D2E;
-  --card: #FFFAF5;
-  --card-foreground: #5C3D2E;
-  --popover: #FFFAF5;
-  --popover-foreground: #5C3D2E;
-  /* 主色：豆沙粉/柔和玫瑰粉 */
-  --primary: #C4868D;
+  /* Warm Scrapbook UI - 治愈软萌风（按设计图精确配色） */
+  --background: #FFF8F2;
+  --foreground: #5C3A32;
+  --card: #FFF8F4;
+  --card-foreground: #5C3A32;
+  --popover: #FFF8F4;
+  --popover-foreground: #5C3A32;
+  /* 主色：柔和豆沙粉 */
+  --primary: #F08C99;
   --primary-foreground: #ffffff;
-  /* 辅助色：暖米色 */
-  --secondary: #FFF1DE;
-  --secondary-foreground: #8B6F5E;
-  --muted: #FEF0E8;
-  --muted-foreground: #A89282;
-  /* 点缀色：蜜桃粉 */
-  --accent: #FDDCC6;
-  --accent-foreground: #8B6F5E;
-  /* 警告/删除：柔和珊瑚 */
-  --destructive: #D4837A;
+  /* 辅助色：暖米杏 */
+  --secondary: #FFF1E9;
+  --secondary-foreground: #997A70;
+  --muted: #F9EAE4;
+  --muted-foreground: #997A70;
+  /* 点缀色：浅杏 */
+  --accent: #FFF1E9;
+  --accent-foreground: #E6735C;
+  /* 警告/删除：橘红 */
+  --destructive: #E6735C;
   --destructive-foreground: #FFF5F2;
-  /* 边框：极淡暖棕 */
-  --border: #F0DDD0;
-  --input: #FEF5EE;
-  --ring: #C4868D;
-  --sidebar: #FDF6F0;
-  --sidebar-foreground: #5C3D2E;
-  --sidebar-primary: #C4868D;
+  /* 边框：极淡粉棕 */
+  --border: #F6D9D2;
+  --input: #FFF8F4;
+  --ring: #F08C99;
+  --sidebar: #FFF8F2;
+  --sidebar-foreground: #5C3A32;
+  --sidebar-primary: #F08C99;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #FEF0E8;
-  --sidebar-accent-foreground: #8B6F5E;
-  --sidebar-border: #F0DDD0;
-  --sidebar-ring: #C4868D;
-  --surface: #FEF5EE;
+  --sidebar-accent: #FFF1E9;
+  --sidebar-accent-foreground: #997A70;
+  --sidebar-border: #F6D9D2;
+  --sidebar-ring: #F08C99;
+  --surface: #FFF8F4;
   --code: var(--surface);
-  --code-highlight: #FEF0E8;
-  --code-number: #A89282;
+  --code-highlight: #FFF1E9;
+  --code-number: #997A70;
   --selection: #C4868D;
   --selection-foreground: #ffffff;
   --primary-container: #FDE8E0;
