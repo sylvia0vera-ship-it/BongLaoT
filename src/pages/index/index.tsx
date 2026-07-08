@@ -24,6 +24,34 @@ const MODE_OPTIONS = [
   { key: 'post-chat', label: '聊后复盘', icon: '📝' },
 ]
 
+const DEMO_USER = {
+  id: 'demo-user',
+  username: '游客体验',
+  nickname: '游客体验',
+  isDemo: true,
+}
+
+const toDisplayText = (value: any): string => {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.filter(Boolean).join('；')
+  if (typeof value === 'object') {
+    return Object.values(value).filter(Boolean).join('；')
+  }
+  return String(value)
+}
+
+const entriesFromValue = (value: any): [string, string][] => {
+  if (!value) return []
+  if (Array.isArray(value)) {
+    return value.map((item, index) => [String(index + 1), toDisplayText(item)])
+  }
+  if (typeof value === 'object') {
+    return Object.entries(value).map(([key, item]) => [key, toDisplayText(item)])
+  }
+  return [['建议', toDisplayText(value)]]
+}
+
 export default function Index() {
   // 登录态
   const [userInfo, setUserInfo] = useState<any>(null)
@@ -52,10 +80,12 @@ export default function Index() {
     // 检查登录态
     const info = Taro.getStorageSync('userInfo')
     if (!info) {
-      Taro.navigateTo({ url: '/pages/login/index' })
-      return
+      Taro.setStorageSync('userInfo', DEMO_USER)
+      Taro.setStorageSync('token', 'demo-token')
+      setUserInfo(DEMO_USER)
+    } else {
+      setUserInfo(info)
     }
-    setUserInfo(info)
     // 恢复粉丝页传来的选中状态
     const preSelectedFanId = Taro.getStorageSync('selectedFanId')
     if (preSelectedFanId) {
@@ -176,7 +206,7 @@ export default function Index() {
           )}
           <View onClick={() => { Taro.removeStorageSync('userInfo'); Taro.removeStorageSync('token'); Taro.navigateTo({ url: '/pages/login/index' }) }} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#E8C9C4' }}>
             <LogOut size={14} color="#A85D6A" />
-            <Text className="block text-xs" style={{ color: '#A85D6A' }}>退出</Text>
+            <Text className="block text-xs" style={{ color: '#A85D6A' }}>{userInfo?.isDemo ? '登录' : '退出'}</Text>
           </View>
         </View>
       </View>
@@ -368,9 +398,9 @@ export default function Index() {
                 <View style={{ marginBottom: 6 }}>
                   <Text className="block text-xs font-medium mb-1" style={{ color: '#2F2523' }}>🔥 前5句破冰</Text>
                   <View style={{ display: 'flex', flexDirection: 'row', gap: 3, flexWrap: 'wrap' }}>
-                    {Object.entries(result.iceBreaker).map(([k, v]) => (
+                    {entriesFromValue(result.iceBreaker).map(([k, v]) => (
                       <View key={k} style={{ padding: '3px 8px', borderRadius: 10, backgroundColor: '#FDE2E4' }}>
-                        <Text className="block text-xs" style={{ color: '#A85D6A' }}>{k}. {v as string}</Text>
+                        <Text className="block text-xs" style={{ color: '#A85D6A' }}>{k}. {v}</Text>
                       </View>
                     ))}
                   </View>
@@ -391,7 +421,7 @@ export default function Index() {
                   {result.postChatReview && (
                     <View style={{ marginBottom: 4 }}>
                       <Text className="block text-xs font-medium" style={{ color: '#7A8061' }}>📋 复盘方向</Text>
-                      <Text className="block text-xs" style={{ color: '#2F2523' }}>{result.postChatReview}</Text>
+                      <Text className="block text-xs" style={{ color: '#2F2523' }}>{toDisplayText(result.postChatReview)}</Text>
                     </View>
                   )}
                   {result.fanProfileUpdate && (
@@ -434,8 +464,8 @@ export default function Index() {
               {result.profileUpdateSuggestions && (
                 <View style={{ marginBottom: 8, borderLeftWidth: 3, borderLeftColor: '#D98C9A', paddingLeft: 8 }}>
                   <Text className="block text-xs font-medium mb-1" style={{ color: '#A85D6A' }}>📝 档案更新建议</Text>
-                  {Object.entries(result.profileUpdateSuggestions as Record<string, string>).map(([k, v]) => v && (
-                    <Text key={k} className="block text-xs" style={{ color: '#2F2523' }}>• {k}：{v as string}</Text>
+                  {entriesFromValue(result.profileUpdateSuggestions).map(([k, v]) => v && (
+                    <Text key={k} className="block text-xs" style={{ color: '#2F2523' }}>• {k}：{v}</Text>
                   ))}
                 </View>
               )}

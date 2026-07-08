@@ -32,12 +32,13 @@ interface FanProfile {
   id: string
   name: string
   relationship_stage: string
-  spending_habit: string
-  chat_preference: string
-  red_flags: string
-  preferred_name: string
+  support_habits: string
+  chat_preferences: string
+  triggers: string
+  nickname: string
   last_interaction_summary: string
-  next_maintenance_tip: string
+  next_step_suggestion: string
+  persona_type?: string
   tags: string | null
   notes: string | null
   created_at: string
@@ -99,12 +100,12 @@ const IndexPage = () => {
     setEditFan(fan)
     setFormName(fan.name)
     setFormStage(fan.relationship_stage || '普通互动')
-    setFormSpending(fan.spending_habit || '')
-    setFormChatPref(fan.chat_preference || '')
-    setFormRedFlags(fan.red_flags || '')
-    setFormPreferredName(fan.preferred_name || '')
+    setFormSpending(fan.support_habits || '')
+    setFormChatPref(fan.chat_preferences || '')
+    setFormRedFlags(fan.triggers || '')
+    setFormPreferredName(fan.nickname || '')
     setFormLastSummary(fan.last_interaction_summary || '')
-    setFormNextTip(fan.next_maintenance_tip || '')
+    setFormNextTip(fan.next_step_suggestion || '')
     setFormTags(fan.tags || '')
     setFormNotes(fan.notes || '')
     setShowEditor(true)
@@ -120,12 +121,12 @@ const IndexPage = () => {
       const payload = {
         name: formName.trim(),
         relationship_stage: formStage,
-        spending_habit: formSpending.trim(),
-        chat_preference: formChatPref.trim(),
-        red_flags: formRedFlags.trim(),
-        preferred_name: formPreferredName.trim(),
+        support_habits: formSpending.trim(),
+        chat_preferences: formChatPref.trim(),
+        triggers: formRedFlags.trim(),
+        nickname: formPreferredName.trim(),
         last_interaction_summary: formLastSummary.trim(),
-        next_maintenance_tip: formNextTip.trim(),
+        next_step_suggestion: formNextTip.trim(),
         tags: formTags.trim(),
         notes: formNotes.trim(),
       }
@@ -354,8 +355,8 @@ const IndexPage = () => {
                             <Text className="block text-xs font-bold" style={{ color: stageStyle.color }}>{fan.relationship_stage || '普通互动'}</Text>
                           </View>
                         </View>
-                        {fan.preferred_name && (
-                          <Text className="block text-xs mt-1" style={{ color: '#7A8061' }}>称呼：{fan.preferred_name}</Text>
+                        {fan.nickname && (
+                          <Text className="block text-xs mt-1" style={{ color: '#7A8061' }}>称呼：{fan.nickname}</Text>
                         )}
                       </View>
                     </View>
@@ -380,19 +381,19 @@ const IndexPage = () => {
                         ))}
                       </View>
                     )}
-                    {fan.spending_habit && (
-                      <Text className="block text-xs" style={{ color: '#7A8061' }}>💰 {fan.spending_habit}</Text>
+                    {fan.support_habits && (
+                      <Text className="block text-xs" style={{ color: '#7A8061' }}>💰 {fan.support_habits}</Text>
                     )}
                     {fan.last_interaction_summary && (
                       <View style={{ marginTop: 3, paddingTop: 2, paddingBottom: 2, paddingLeft: 8, paddingRight: 8, borderRadius: 6, backgroundColor: '#FFF7F2' }}>
                         <Text className="block text-xs" style={{ color: '#7A8061' }}>最近：{fan.last_interaction_summary}</Text>
                       </View>
                     )}
-                    {fan.next_maintenance_tip && (
-                      <Text className="block text-xs mt-1" style={{ color: '#D98C9A' }}>→ {fan.next_maintenance_tip}</Text>
+                    {fan.next_step_suggestion && (
+                      <Text className="block text-xs mt-1" style={{ color: '#D98C9A' }}>→ {fan.next_step_suggestion}</Text>
                     )}
-                    {fan.red_flags && (
-                      <Text className="block text-xs mt-1" style={{ color: '#C77763' }}>⚠️ 雷点：{fan.red_flags}</Text>
+                    {fan.triggers && (
+                      <Text className="block text-xs mt-1" style={{ color: '#C77763' }}>⚠️ 雷点：{fan.triggers}</Text>
                     )}
                   </View>
                 </View>

@@ -5,6 +5,23 @@ import { getSupabaseClient } from '../storage/database/supabase-client'
 export class FansService {
   private supabase = getSupabaseClient()
 
+  private normalizeFanPayload(body: Record<string, any>) {
+    return {
+      name: body.name,
+      relationship_stage: body.relationship_stage,
+      support_habits: body.support_habits ?? body.spending_habit,
+      chat_preferences: body.chat_preferences ?? body.chat_preference,
+      triggers: body.triggers ?? body.red_flags,
+      nickname: body.nickname ?? body.preferred_name,
+      last_interaction_summary: body.last_interaction_summary,
+      next_step_suggestion: body.next_step_suggestion ?? body.next_maintenance_tip,
+      persona_type: body.persona_type,
+      tags: body.tags,
+      notes: body.notes,
+      relationship_level: body.relationship_level,
+    }
+  }
+
   async findAll() {
     const { data, error } = await this.supabase
       .from('fans')
@@ -25,18 +42,14 @@ export class FansService {
   }
 
   async create(body: Record<string, any>) {
-    const insertData: Record<string, any> = { name: body.name }
-    if (body.relationship_stage) insertData.relationship_stage = body.relationship_stage
-    if (body.support_habits) insertData.support_habits = body.support_habits
-    if (body.chat_preferences) insertData.chat_preferences = body.chat_preferences
-    if (body.triggers) insertData.triggers = body.triggers
-    if (body.nickname) insertData.nickname = body.nickname
-    if (body.last_interaction_summary) insertData.last_interaction_summary = body.last_interaction_summary
-    if (body.next_step_suggestion) insertData.next_step_suggestion = body.next_step_suggestion
-    if (body.persona_type) insertData.persona_type = body.persona_type
-    if (body.tags) insertData.tags = body.tags
-    if (body.notes) insertData.notes = body.notes
-    if (body.relationship_level) insertData.relationship_level = body.relationship_level
+    const normalized = this.normalizeFanPayload(body)
+    const insertData: Record<string, any> = { name: normalized.name }
+    const fields = ['relationship_stage', 'support_habits', 'chat_preferences',
+      'triggers', 'nickname', 'last_interaction_summary', 'next_step_suggestion',
+      'persona_type', 'tags', 'notes', 'relationship_level']
+    for (const f of fields) {
+      if (normalized[f] !== undefined && normalized[f] !== '') insertData[f] = normalized[f]
+    }
 
     const { data, error } = await this.supabase
       .from('fans')
@@ -48,12 +61,13 @@ export class FansService {
   }
 
   async update(id: string, body: Record<string, any>) {
+    const normalized = this.normalizeFanPayload(body)
     const updateData: Record<string, any> = { updated_at: new Date().toISOString() }
     const fields = ['name', 'relationship_stage', 'support_habits', 'chat_preferences',
       'triggers', 'nickname', 'last_interaction_summary', 'next_step_suggestion',
       'persona_type', 'tags', 'notes', 'relationship_level']
     for (const f of fields) {
-      if (body[f] !== undefined) updateData[f] = body[f]
+      if (normalized[f] !== undefined) updateData[f] = normalized[f]
     }
 
     const { data, error } = await this.supabase
